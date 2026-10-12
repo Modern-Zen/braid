@@ -1,0 +1,9 @@
+{
+  "pair": ["dark-mode.rewrite", "refactor-gauge.rewrite"],
+  "conflicted": ["src/components/Gauge.tsx", "src/components/RiverCard.tsx", "test/gauge.test.tsx"],
+  "touched": ["src/components/Gauge.tsx", "src/components/RiverCard.tsx", "test/dark-mode.test.tsx", "test/gauge.test.tsx"],
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "notes": "Both Channels rewrote the gauge: dark-mode for per-scheme colors and a new layout, the refactor for a prop-getter hook and a reading={Reading} prop. Gauge.tsx takes the refactor's structure and props (useGauge, getMeterProps, getToggleProps, reading) and dark-mode's presentation (exported GAUGE_COLORS, scheme prop, header-row layout, alert-tinted track); dark-mode's inline SCALES table is dropped for the hook's. RiverCard.tsx keeps dark-mode's CARD_COLORS and scheme and passes reading={...} as the refactor does. test/gauge.test.tsx keeps the refactor's Reading-building fixtures with dark-mode's GAUGE_COLORS assertions. test/dark-mode.test.tsx merged without a textual conflict but spread flat props; it now passes reading objects, with assertions unchanged.",
+  "tests": { "passed": 23, "total": 23 }
+}

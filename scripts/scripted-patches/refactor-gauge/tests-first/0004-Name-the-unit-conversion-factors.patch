@@ -1,0 +1,44 @@
+From 69c4e173fc59216dcd1485371e5b4213e60ad036 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:43:28 -0700
+Subject: [PATCH 4/4] Name the unit conversion factors
+
+Replace the magic numbers in gaugeReading with METERS_PER_FOOT,
+CUBIC_METERS_PER_CUBIC_FOOT and fahrenheitToCelsius. The pinned tests
+show nothing moved.
+---
+ src/hooks/useGauge.ts | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/src/hooks/useGauge.ts b/src/hooks/useGauge.ts
+index 4abb5c1..93bcc48 100644
+--- a/src/hooks/useGauge.ts
++++ b/src/hooks/useGauge.ts
+@@ -3,6 +3,10 @@ import type { GaugeKind } from "../types";
+ 
+ export type Units = "us" | "metric";
+ 
++const METERS_PER_FOOT = 0.3048;
++const CUBIC_METERS_PER_CUBIC_FOOT = 0.0283168;
++const fahrenheitToCelsius = (f: number) => ((f - 32) * 5) / 9;
++
+ export interface GaugeInput {
+   kind: GaugeKind;
+   /** Reading in US units: feet (stage), cubic feet per second (flow), °F (temp). */
+@@ -33,13 +37,13 @@ export function gaugeReading({ kind, value, min, max, alertAt }: GaugeInput, uni
+   let shown = value;
+   let unit = "ft";
+   if (kind === "stage") {
+-    shown = metric ? value * 0.3048 : value;
++    shown = metric ? value * METERS_PER_FOOT : value;
+     unit = metric ? "m" : "ft";
+   } else if (kind === "flow") {
+-    shown = metric ? value * 0.0283168 : value;
++    shown = metric ? value * CUBIC_METERS_PER_CUBIC_FOOT : value;
+     unit = metric ? "m³/s" : "cfs";
+   } else {
+-    shown = metric ? ((value - 32) * 5) / 9 : value;
++    shown = metric ? fahrenheitToCelsius(value) : value;
+     unit = metric ? "°C" : "°F";
+   }
+ 

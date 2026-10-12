@@ -1,0 +1,106 @@
+From 7b5718cc7a5743578a1e7c3f735c77e200a719a7 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:29:03 -0700
+Subject: [PATCH 1/4] Add a token bucket for API rate limits
+
+A pure token bucket (capacity 10, refilled at 10 per second) with tests
+on a fixed clock: the burst, the refill rate, the capacity cap, and a
+clock that steps backwards. Nothing uses it yet.
+---
+ src/api/limiter/bucket.ts | 42 +++++++++++++++++++++++++++++++++++++++
+ test/rate-limit.test.ts   | 37 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 79 insertions(+)
+ create mode 100644 src/api/limiter/bucket.ts
+ create mode 100644 test/rate-limit.test.ts
+
+diff --git a/src/api/limiter/bucket.ts b/src/api/limiter/bucket.ts
+new file mode 100644
+index 0000000..b114ed6
+--- /dev/null
++++ b/src/api/limiter/bucket.ts
+@@ -0,0 +1,42 @@
++// A token bucket: up to `capacity` tokens, refilled continuously at
++// `refillPerSecond`. Each request takes one. Pure, so it can be tested on a
++// fixed clock and stored anywhere.
++
++export interface BucketConfig {
++  capacity: number;
++  refillPerSecond: number;
++}
++
++export interface BucketState {
++  tokens: number;
++  /** ms since epoch of the last take. */
++  updatedAt: number;
++}
++
++export interface TakeResult {
++  allowed: boolean;
++  /** Whole tokens left after this take. */
++  remaining: number;
++  /** How long until one token is available again (0 when allowed). */
++  retryAfterMs: number;
++  state: BucketState;
++}
++
++/** /api: 10 requests per second per token, with bursts of up to 10. */
++export const API_LIMIT: BucketConfig = { capacity: 10, refillPerSecond: 10 };
++
++export function fullBucket(config: BucketConfig, now: number): BucketState {
++  return { tokens: config.capacity, updatedAt: now };
++}
++
++export function take(state: BucketState, config: BucketConfig, now: number): TakeResult {
++  // A clock that steps backwards refills nothing rather than draining the bucket.
++  const elapsedSeconds = Math.max(0, now - state.updatedAt) / 1000;
++  const tokens = Math.min(config.capacity, state.tokens + elapsedSeconds * config.refillPerSecond);
++  if (tokens >= 1) {
++    const next = { tokens: tokens - 1, updatedAt: now };
++    return { allowed: true, remaining: Math.floor(next.tokens), retryAfterMs: 0, state: next };
++  }
++  const retryAfterMs = Math.ceil(((1 - tokens) / config.refillPerSecond) * 1000);
++  return { allowed: false, remaining: 0, retryAfterMs, state: { tokens, updatedAt: now } };
++}
+diff --git a/test/rate-limit.test.ts b/test/rate-limit.test.ts
+new file mode 100644
+index 0000000..772fc94
+--- /dev/null
++++ b/test/rate-limit.test.ts
+@@ -0,0 +1,37 @@
++import { describe, expect, it } from "vitest";
++import { API_LIMIT, fullBucket, take, type BucketState } from "../src/api/limiter/bucket";
++
++/** Take `n` times at `now`, returning how many were allowed and the final state. */
++function burst(state: BucketState, n: number, now: number) {
++  let allowed = 0;
++  for (let i = 0; i < n; i++) {
++    const result = take(state, API_LIMIT, now);
++    state = result.state;
++    if (result.allowed) allowed++;
++  }
++  return { allowed, state };
++}
++
++describe("token bucket", () => {
++  it("allows a burst of 10, then refuses with a retry delay", () => {
++    const { allowed, state } = burst(fullBucket(API_LIMIT, 0), 10, 0);
++    expect(allowed).toBe(10);
++    const refused = take(state, API_LIMIT, 0);
++    expect(refused.allowed).toBe(false);
++    expect(refused.remaining).toBe(0);
++    expect(refused.retryAfterMs).toBe(100);
++  });
++
++  it("refills at 10 tokens per second", () => {
++    const empty = burst(fullBucket(API_LIMIT, 0), 10, 0).state;
++    expect(take(empty, API_LIMIT, 50).allowed).toBe(false);
++    expect(take(empty, API_LIMIT, 100).allowed).toBe(true);
++    expect(burst(empty, 11, 1000).allowed).toBe(10);
++  });
++
++  it("never holds more than its capacity, even after a long idle or a clock step back", () => {
++    const empty = burst(fullBucket(API_LIMIT, 0), 10, 0).state;
++    expect(burst(empty, 20, 3_600_000).allowed).toBe(10);
++    expect(take(empty, API_LIMIT, -5_000).allowed).toBe(false);
++  });
++});

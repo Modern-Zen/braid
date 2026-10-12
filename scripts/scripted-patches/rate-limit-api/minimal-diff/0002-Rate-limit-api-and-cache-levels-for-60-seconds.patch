@@ -1,0 +1,79 @@
+From eaeb04f83b59da59432e7fe97b3f578b4927d1f9 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:38:55 -0700
+Subject: [PATCH 2/2] Rate-limit /api and cache /levels for 60 seconds
+
+Three lines in the API: rateLimit on every route and cache(60) on
+/levels. Without the binding (pnpm dev, the existing tests) the limiter
+is skipped.
+---
+ src/api/index.ts        |  6 ++++--
+ test/rate-limit.test.ts | 43 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 47 insertions(+), 2 deletions(-)
+ create mode 100644 test/rate-limit.test.ts
+
+diff --git a/src/api/index.ts b/src/api/index.ts
+index 1dff939..aee7956 100644
+--- a/src/api/index.ts
++++ b/src/api/index.ts
+@@ -1,7 +1,9 @@
+ import { Hono } from "hono";
+ import { level, levels } from "./levels";
++import { cache, rateLimit, type RateLimitEnv } from "./rateLimit";
+ 
+-export const api = new Hono();
++export const api = new Hono<RateLimitEnv>();
+ 
+-api.get("/levels", levels);
++api.use("*", rateLimit);
++api.get("/levels", cache(60), levels);
+ api.get("/levels/:id", level);
+diff --git a/test/rate-limit.test.ts b/test/rate-limit.test.ts
+new file mode 100644
+index 0000000..0837801
+--- /dev/null
++++ b/test/rate-limit.test.ts
+@@ -0,0 +1,43 @@
++import { afterEach, beforeEach, expect, it, vi } from "vitest";
++import { RateLimiter } from "../src/api/rateLimit";
++import { app } from "../src/worker";
++
++// RATE_LIMITER backed by real RateLimiter objects, one per name.
++function env() {
++  const objects = new Map<string, RateLimiter>();
++  return {
++    RATE_LIMITER: {
++      idFromName: (name: string) => name,
++      get: (id: unknown) => {
++        const name = String(id);
++        if (!objects.has(name)) objects.set(name, new RateLimiter());
++        return objects.get(name)!;
++      },
++    },
++  };
++}
++
++const get = (bindings: ReturnType<typeof env>, token: string) =>
++  app.request("/api/levels", { headers: { authorization: `Bearer ${token}` } }, bindings);
++
++beforeEach(() => {
++  vi.useFakeTimers({ toFake: ["Date"] });
++  vi.setSystemTime(0);
++});
++afterEach(() => vi.useRealTimers());
++
++it("allows 10 requests per second per token, then answers 429", async () => {
++  const bindings = env();
++  for (let i = 0; i < 10; i++) expect((await get(bindings, "a")).status).toBe(200);
++  const res = await get(bindings, "a");
++  expect(res.status).toBe(429);
++  expect(await res.json()).toEqual({ error: "rate_limited", retryAfter: 1 });
++  expect((await get(bindings, "b")).status).toBe(200);
++  vi.setSystemTime(1000);
++  expect((await get(bindings, "a")).status).toBe(200);
++});
++
++it("caches /levels for 60 seconds", async () => {
++  const res = await app.request("/api/levels");
++  expect(res.headers.get("cache-control")).toBe("max-age=60");
++});

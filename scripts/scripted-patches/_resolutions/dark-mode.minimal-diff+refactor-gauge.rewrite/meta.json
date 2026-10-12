@@ -1,0 +1,9 @@
+{
+  "pair": ["dark-mode.minimal-diff", "refactor-gauge.rewrite"],
+  "conflicted": ["src/components/Gauge.tsx", "test/gauge.test.tsx"],
+  "touched": ["src/components/Gauge.tsx", "test/gauge.test.tsx", "test/theme.test.tsx"],
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "notes": "The refactor rebuilt Gauge on prop getters with a new prop shape (reading={Reading}), and dark-mode moved the gauge's colors to var(--rl-*) tokens. Gauge.tsx keeps the refactor's structure and props and takes dark-mode's tokens import, tokens.* colors and color-mix track. test/gauge.test.tsx keeps the refactor's Reading-building fixtures with dark-mode's token assertions. test/theme.test.tsx merged without a textual conflict but rendered the old flat props, so it now passes a reading object; its assertions are unchanged.",
+  "tests": { "passed": 23, "total": 23 }
+}

@@ -1,0 +1,14 @@
+{
+  // River levels as one Worker: the Hono API on /api/*, the built UI as static assets.
+  // Build first (`pnpm build` writes dist/), then `npx wrangler deploy`.
+  "name": "riverlevels",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-12",
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  }
+}

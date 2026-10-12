@@ -1,0 +1,199 @@
+From 82518e5abf68e39f73b603d0c63f4e9fd41721c7 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:30:52 -0700
+Subject: [PATCH 3/4] Limit /api to 10 requests per second per token
+
+rateLimit() runs on every /api route. It keys callers by a SHA-256 of
+their bearer token (else their IP), asks that caller's RateLimiter for a
+token, and answers an empty bucket with 429
+{ error: "rate_limited", retryAfter: 1 } and Retry-After: 1. It fails
+open, with a logged error, when the binding is missing (pnpm dev, unit
+tests) or the limiter can't be reached. Tests drive real RateLimiter
+instances through a fake namespace on a test clock.
+---
+ src/api/index.ts                |  6 ++-
+ src/api/middleware/rateLimit.ts | 50 ++++++++++++++++++
+ test/rate-limit.test.ts         | 94 ++++++++++++++++++++++++++++++++-
+ 3 files changed, 148 insertions(+), 2 deletions(-)
+ create mode 100644 src/api/middleware/rateLimit.ts
+
+diff --git a/src/api/index.ts b/src/api/index.ts
+index 1dff939..faaa5f6 100644
+--- a/src/api/index.ts
++++ b/src/api/index.ts
+@@ -1,7 +1,11 @@
+ import { Hono } from "hono";
++import type { Env } from "../env";
+ import { level, levels } from "./levels";
++import { rateLimit } from "./middleware/rateLimit";
+ 
+-export const api = new Hono();
++export const api = new Hono<{ Bindings: Env }>();
++
++api.use("*", rateLimit());
+ 
+ api.get("/levels", levels);
+ api.get("/levels/:id", level);
+diff --git a/src/api/middleware/rateLimit.ts b/src/api/middleware/rateLimit.ts
+new file mode 100644
+index 0000000..0392ec4
+--- /dev/null
++++ b/src/api/middleware/rateLimit.ts
+@@ -0,0 +1,50 @@
++import { createMiddleware } from "hono/factory";
++import type { Env } from "../../env";
++import type { LimitDecision } from "../limiter/RateLimiter";
++
++/** Seconds a refused caller is told to wait. A token refills every 100 ms, so 1 s is safe. */
++export const RETRY_AFTER_SECONDS = 1;
++
++async function sha256(text: string): Promise<string> {
++  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
++  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
++}
++
++/**
++ * Who a request counts against: its bearer token, else the client's IP.
++ * Tokens are hashed so the raw credential never becomes a Durable Object name.
++ */
++export async function limitKey(request: Request): Promise<string> {
++  const token = /^Bearer\s+(\S+)/i.exec(request.headers.get("authorization") ?? "")?.[1];
++  if (token) return `token:${await sha256(token)}`;
++  return `ip:${request.headers.get("cf-connecting-ip") ?? "unknown"}`;
++}
++
++/**
++ * 10 requests per second per caller, enforced by the RateLimiter Durable Object.
++ * Over the limit: 429 `{ error: "rate_limited", retryAfter: 1 }` and `Retry-After: 1`.
++ *
++ * Fails open: without the binding (`pnpm dev`, unit tests) or if the limiter
++ * can't be reached, the request goes through and the failure is logged.
++ */
++export function rateLimit() {
++  return createMiddleware<{ Bindings: Env }>(async (c, next) => {
++    const limiter = c.env?.RATE_LIMITER;
++    if (!limiter) return next();
++
++    let decision: LimitDecision | null = null;
++    try {
++      const stub = limiter.get(limiter.idFromName(await limitKey(c.req.raw)));
++      const res = await stub.fetch("https://rate-limiter/take", { method: "POST" });
++      decision = (await res.json()) as LimitDecision;
++    } catch (err) {
++      console.error("rate limiter unavailable; allowing the request", err);
++    }
++
++    if (decision && !decision.allowed) {
++      c.header("Retry-After", String(RETRY_AFTER_SECONDS));
++      return c.json({ error: "rate_limited", retryAfter: RETRY_AFTER_SECONDS }, 429);
++    }
++    await next();
++  });
++}
+diff --git a/test/rate-limit.test.ts b/test/rate-limit.test.ts
+index 772fc94..9564f8f 100644
+--- a/test/rate-limit.test.ts
++++ b/test/rate-limit.test.ts
+@@ -1,5 +1,46 @@
+-import { describe, expect, it } from "vitest";
++import { describe, expect, it, vi } from "vitest";
+ import { API_LIMIT, fullBucket, take, type BucketState } from "../src/api/limiter/bucket";
++import { RateLimiter } from "../src/api/limiter/RateLimiter";
++import type { Env } from "../src/env";
++import { app } from "../src/worker";
++
++/**
++ * A RATE_LIMITER binding backed by real RateLimiter instances on a test clock,
++ * one per name, the way the runtime addresses Durable Objects.
++ */
++function limiterEnv(clock = { now: 0 }) {
++  class TestLimiter extends RateLimiter {
++    protected override now() {
++      return clock.now;
++    }
++  }
++  const instances = new Map<string, TestLimiter>();
++  const names: string[] = [];
++  const env: Env = {
++    RATE_LIMITER: {
++      idFromName(name) {
++        names.push(name);
++        return name;
++      },
++      get(id) {
++        const key = String(id);
++        const instance = instances.get(key) ?? new TestLimiter();
++        instances.set(key, instance);
++        return { fetch: (input, init) => instance.fetch(new Request(input, init)) };
++      },
++    },
++  };
++  return { env, clock, names };
++}
++
++async function statuses(env: Env, n: number, headers: Record<string, string>) {
++  const out: number[] = [];
++  for (let i = 0; i < n; i++) out.push((await app.request("/api/levels", { headers }, env)).status);
++  return out;
++}
++
++const alice = { authorization: "Bearer alice-token" };
++const bob = { authorization: "Bearer bob-token" };
+ 
+ /** Take `n` times at `now`, returning how many were allowed and the final state. */
+ function burst(state: BucketState, n: number, now: number) {
+@@ -35,3 +76,54 @@ describe("token bucket", () => {
+     expect(take(empty, API_LIMIT, -5_000).allowed).toBe(false);
+   });
+ });
++
++describe("/api rate limit", () => {
++  it("answers the 11th request in a second with 429 and a retry hint", async () => {
++    const { env } = limiterEnv();
++    expect(await statuses(env, 10, alice)).toEqual(Array(10).fill(200));
++    const res = await app.request("/api/levels", { headers: alice }, env);
++    expect(res.status).toBe(429);
++    expect(res.headers.get("retry-after")).toBe("1");
++    expect(await res.json()).toEqual({ error: "rate_limited", retryAfter: 1 });
++  });
++
++  it("counts each token separately", async () => {
++    const { env } = limiterEnv();
++    expect(await statuses(env, 11, alice)).toContain(429);
++    expect(await statuses(env, 10, bob)).toEqual(Array(10).fill(200));
++  });
++
++  it("lets a caller back in once the bucket refills", async () => {
++    const { env, clock } = limiterEnv();
++    await statuses(env, 11, alice);
++    clock.now += 1000;
++    expect(await statuses(env, 10, alice)).toEqual(Array(10).fill(200));
++  });
++
++  it("keys by a hash of the token, or by IP without one", async () => {
++    const { env, names } = limiterEnv();
++    await app.request("/api/levels", { headers: alice }, env);
++    await app.request("/api/levels", { headers: { "cf-connecting-ip": "203.0.113.7" } }, env);
++    expect(names[0]).toMatch(/^token:[0-9a-f]{64}$/);
++    expect(names[0]).not.toContain("alice-token");
++    expect(names[1]).toBe("ip:203.0.113.7");
++  });
++
++  it("fails open when the limiter can't be reached", async () => {
++    const error = vi.spyOn(console, "error").mockImplementation(() => {});
++    const env: Env = {
++      RATE_LIMITER: {
++        idFromName: (name) => name,
++        get: () => ({ fetch: () => Promise.reject(new Error("unreachable")) }),
++      },
++    };
++    expect(await statuses(env, 12, alice)).toEqual(Array(12).fill(200));
++    expect(error).toHaveBeenCalled();
++    error.mockRestore();
++  });
++
++  it("is off without the binding, as under pnpm dev", async () => {
++    const res = await Promise.all(Array.from({ length: 20 }, () => app.request("/api/levels")));
++    expect(res.map((r) => r.status)).toEqual(Array(20).fill(200));
++  });
++});

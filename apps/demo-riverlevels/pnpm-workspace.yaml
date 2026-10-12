@@ -1,0 +1,5 @@
+# This folder is its own project root: it becomes the root of the Artifacts repo
+# `river-riverlevels`, and the Headwaters workspace excludes it.
+# pnpm reads install settings from this file.
+allowBuilds:
+  esbuild: true

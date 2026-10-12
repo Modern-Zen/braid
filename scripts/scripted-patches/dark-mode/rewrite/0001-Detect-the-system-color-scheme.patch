@@ -1,0 +1,40 @@
+From 1aef90342cd3cdffe70a193e7886a238d2749881 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:23:59 -0700
+Subject: [PATCH 1/4] Detect the system color scheme
+
+useColorScheme() reads prefers-color-scheme through matchMedia and keeps
+following it. Server renders and tests pass the scheme in explicitly.
+---
+ src/theme/useColorScheme.ts | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+ create mode 100644 src/theme/useColorScheme.ts
+
+diff --git a/src/theme/useColorScheme.ts b/src/theme/useColorScheme.ts
+new file mode 100644
+index 0000000..e496b56
+--- /dev/null
++++ b/src/theme/useColorScheme.ts
+@@ -0,0 +1,22 @@
++import { useEffect, useState } from "react";
++
++export type ColorScheme = "light" | "dark";
++
++const DARK_QUERY = "(prefers-color-scheme: dark)";
++
++/**
++ * The system color scheme, kept live. `initial` is what the server render and
++ * the first client frame use, before matchMedia can be read.
++ */
++export function useColorScheme(initial: ColorScheme = "light"): ColorScheme {
++  const [scheme, setScheme] = useState<ColorScheme>(initial);
++  useEffect(() => {
++    if (typeof window === "undefined" || !window.matchMedia) return;
++    const media = window.matchMedia(DARK_QUERY);
++    const update = () => setScheme(media.matches ? "dark" : "light");
++    update();
++    media.addEventListener("change", update);
++    return () => media.removeEventListener("change", update);
++  }, []);
++  return scheme;
++}

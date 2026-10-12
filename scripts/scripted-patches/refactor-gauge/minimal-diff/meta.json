@@ -1,0 +1,25 @@
+{
+  "intent": "refactor-gauge",
+  "strategy": "minimal-diff",
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "recordedAt": "2026-10-12T20:40:59Z",
+  "base": "a1e0aaba4cae0b27a958621c7f527aea2336f8d1",
+  "commits": [
+    {
+      "file": "0001-Extract-useGauge-from-Gauge.patch",
+      "subject": "Extract useGauge from Gauge",
+      "delaySec": [20, 35]
+    },
+    {
+      "file": "0002-Test-useGauge-directly.patch",
+      "subject": "Test useGauge directly",
+      "delaySec": [10, 25]
+    }
+  ],
+  "turns": 10,
+  "durationMs": 45000,
+  "costUsd": null,
+  "lines": ["src/components/Gauge.tsx", "src/hooks/useGauge.ts", "test/useGauge.test.tsx"],
+  "notes": "Verbatim extraction: unit state, conversion, formatting, fill and alert move to src/hooks/useGauge.ts; Gauge.tsx keeps props, markup and colors and calls the hook. Existing tests untouched; 3 new hook tests through a probe component. 17/17, pnpm build passes. Conflicts with every dark-mode series on src/components/Gauge.tsx."
+}

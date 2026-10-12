@@ -1,0 +1,197 @@
+From 440eebbf9025a00568a282ca2062cf7aace3d9a2 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:22:46 -0700
+Subject: [PATCH 4/4] Add a dark mode toggle that starts from the system
+ setting
+
+App resolves the theme in the browser (saved choice, else
+prefers-color-scheme, followed live until the reader chooses), provides
+it to the gauges, mirrors it on <html data-theme> for the CSS, and saves
+an explicit choice in localStorage. ThemeToggle is a pressed/unpressed
+"Dark mode" button in the header. All tests pass.
+---
+ src/App.tsx               | 85 +++++++++++++++++++++++++++++----------
+ src/theme/ThemeToggle.tsx | 22 ++++++++++
+ src/theme/theme.css       | 27 +++++++++++++
+ 3 files changed, 113 insertions(+), 21 deletions(-)
+ create mode 100644 src/theme/ThemeToggle.tsx
+
+diff --git a/src/App.tsx b/src/App.tsx
+index fcae32a..646c865 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,5 +1,8 @@
+ import { useEffect, useState } from "react";
+ import { RiverCard } from "./components/RiverCard";
++import { THEME_STORAGE_KEY, ThemeProvider, resolveTheme } from "./theme/ThemeContext";
++import { ThemeToggle } from "./theme/ThemeToggle";
++import type { ThemeName } from "./theme/tokens";
+ import type { LevelsResponse, River } from "./types";
+ 
+ /** The dashboard refreshes every 30 s: one request per open tab, well under any limit. */
+@@ -8,11 +11,22 @@ export const REFRESH_MS = 30_000;
+ export interface AppProps {
+   /** Rendered immediately; the dashboard still refreshes from /api/levels. */
+   initialRivers?: River[];
++  /** Fixes the theme (server render, tests). Otherwise it is resolved in the browser. */
++  initialTheme?: ThemeName;
+ }
+ 
+-export function App({ initialRivers }: AppProps) {
++function savedTheme(): string | null {
++  try {
++    return localStorage.getItem(THEME_STORAGE_KEY);
++  } catch {
++    return null;
++  }
++}
++
++export function App({ initialRivers, initialTheme }: AppProps) {
+   const [rivers, setRivers] = useState<River[] | null>(initialRivers ?? null);
+   const [error, setError] = useState<string | null>(null);
++  const [theme, setTheme] = useState<ThemeName>(initialTheme ?? "light");
+ 
+   useEffect(() => {
+     let alive = true;
+@@ -36,26 +50,55 @@ export function App({ initialRivers }: AppProps) {
+     };
+   }, []);
+ 
++  // The reader's saved choice, else the system setting, which we keep following
++  // until the reader picks a theme themselves.
++  useEffect(() => {
++    if (initialTheme) return;
++    const media = window.matchMedia("(prefers-color-scheme: dark)");
++    setTheme(resolveTheme(savedTheme(), media.matches));
++    const follow = (event: MediaQueryListEvent) => {
++      if (savedTheme() === null) setTheme(event.matches ? "dark" : "light");
++    };
++    media.addEventListener("change", follow);
++    return () => media.removeEventListener("change", follow);
++  }, [initialTheme]);
++
++  useEffect(() => {
++    document.documentElement.dataset.theme = theme;
++  }, [theme]);
++
++  const chooseTheme = (next: ThemeName) => {
++    setTheme(next);
++    try {
++      localStorage.setItem(THEME_STORAGE_KEY, next);
++    } catch {
++      // Storage disabled or private mode: the choice lasts for this visit.
++    }
++  };
++
+   return (
+-    <main className="app">
+-      <header className="app-header">
+-        <h1>River levels</h1>
+-        <p className="app-subtitle">Stage, flow and water temperature</p>
+-      </header>
+-      {error && (
+-        <p className="app-error" role="alert">
+-          {`Couldn’t refresh the gauges: ${error}`}
+-        </p>
+-      )}
+-      {rivers === null ? (
+-        <p className="app-loading">Loading gauges…</p>
+-      ) : (
+-        <section className="river-grid" aria-label="Rivers">
+-          {rivers.map((river) => (
+-            <RiverCard key={river.id} river={river} />
+-          ))}
+-        </section>
+-      )}
+-    </main>
++    <ThemeProvider value={theme}>
++      <main className="app" data-theme={theme}>
++        <header className="app-header">
++          <h1>River levels</h1>
++          <p className="app-subtitle">Stage, flow and water temperature</p>
++          <ThemeToggle theme={theme} onChange={chooseTheme} />
++        </header>
++        {error && (
++          <p className="app-error" role="alert">
++            {`Couldn’t refresh the gauges: ${error}`}
++          </p>
++        )}
++        {rivers === null ? (
++          <p className="app-loading">Loading gauges…</p>
++        ) : (
++          <section className="river-grid" aria-label="Rivers">
++            {rivers.map((river) => (
++              <RiverCard key={river.id} river={river} />
++            ))}
++          </section>
++        )}
++      </main>
++    </ThemeProvider>
+   );
+ }
+diff --git a/src/theme/ThemeToggle.tsx b/src/theme/ThemeToggle.tsx
+new file mode 100644
+index 0000000..58e16a1
+--- /dev/null
++++ b/src/theme/ThemeToggle.tsx
+@@ -0,0 +1,22 @@
++import type { ThemeName } from "./tokens";
++
++export interface ThemeToggleProps {
++  theme: ThemeName;
++  onChange: (theme: ThemeName) => void;
++}
++
++/** A pressed/unpressed "Dark mode" button. */
++export function ThemeToggle({ theme, onChange }: ThemeToggleProps) {
++  const isDark = theme === "dark";
++  return (
++    <button
++      type="button"
++      className="theme-toggle"
++      aria-pressed={isDark}
++      onClick={() => onChange(isDark ? "light" : "dark")}
++    >
++      <span className="theme-toggle-dot" aria-hidden="true" />
++      Dark mode
++    </button>
++  );
++}
+diff --git a/src/theme/theme.css b/src/theme/theme.css
+index 4c1e129..949dd75 100644
+--- a/src/theme/theme.css
++++ b/src/theme/theme.css
+@@ -59,6 +59,33 @@ body {
+   letter-spacing: -0.01em;
+ }
+ 
++.theme-toggle {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  margin-left: auto;
++  padding: 6px 12px;
++  border: 1px solid var(--rl-line);
++  border-radius: 999px;
++  background: var(--rl-surface);
++  color: var(--rl-ink);
++  font: inherit;
++  font-size: 13px;
++  cursor: pointer;
++}
++
++.theme-toggle-dot {
++  width: 10px;
++  height: 10px;
++  border-radius: 50%;
++  border: 1px solid var(--rl-muted);
++}
++
++.theme-toggle[aria-pressed="true"] .theme-toggle-dot {
++  background: var(--rl-ink);
++  border-color: var(--rl-ink);
++}
++
+ .app-subtitle,
+ .app-loading {
+   margin: 0;

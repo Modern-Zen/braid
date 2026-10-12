@@ -1,0 +1,121 @@
+From 9740fbd4316752734666c3e6f753d2b2095da058 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:21:33 -0700
+Subject: [PATCH 2/4] Add a dark palette and theme context
+
+tokens.ts gains a dark palette and palettes by name. ThemeContext.tsx
+holds the active theme (light by default), usePalette() for components
+that color inline, and resolveTheme(): a saved choice wins, otherwise
+the system setting. theme.css switches its variables under
+:root[data-theme="dark"].
+---
+ src/theme/ThemeContext.tsx | 25 +++++++++++++++++++++++++
+ src/theme/theme.css        | 13 ++++++++++++-
+ src/theme/tokens.ts        | 26 ++++++++++++++++++++++----
+ 3 files changed, 59 insertions(+), 5 deletions(-)
+ create mode 100644 src/theme/ThemeContext.tsx
+
+diff --git a/src/theme/ThemeContext.tsx b/src/theme/ThemeContext.tsx
+new file mode 100644
+index 0000000..15db8ef
+--- /dev/null
++++ b/src/theme/ThemeContext.tsx
+@@ -0,0 +1,25 @@
++import { createContext, useContext } from "react";
++import { palettes, type Palette, type ThemeName } from "./tokens";
++
++/** localStorage key for the reader's explicit choice. */
++export const THEME_STORAGE_KEY = "riverlevels-theme";
++
++const ThemeContext = createContext<ThemeName>("light");
++
++/** Provides the active theme to everything below it. Defaults to light. */
++export const ThemeProvider = ThemeContext.Provider;
++
++export function useTheme(): ThemeName {
++  return useContext(ThemeContext);
++}
++
++/** The palette for the active theme, for components that set colors inline. */
++export function usePalette(): Palette {
++  return palettes[useContext(ThemeContext)];
++}
++
++/** A saved, valid choice wins; otherwise follow the system setting. */
++export function resolveTheme(saved: string | null, systemPrefersDark: boolean): ThemeName {
++  if (saved === "light" || saved === "dark") return saved;
++  return systemPrefersDark ? "dark" : "light";
++}
+diff --git a/src/theme/theme.css b/src/theme/theme.css
+index 355a9aa..4c1e129 100644
+--- a/src/theme/theme.css
++++ b/src/theme/theme.css
+@@ -1,4 +1,6 @@
+-/* Light theme. Keep these values in sync with tokens.ts. */
++/* Light theme, and dark when <html data-theme="dark">. The app sets the attribute
++   from the reader's choice or the system setting.
++   Keep these values in sync with `light` and `dark` in tokens.ts. */
+ :root {
+   --rl-bg: #f5f5f4;
+   --rl-surface: #ffffff;
+@@ -11,6 +13,15 @@
+   color-scheme: light;
+ }
+ 
++:root[data-theme="dark"] {
++  --rl-bg: #0c0a09;
++  --rl-surface: #1c1917;
++  --rl-ink: #fafaf9;
++  --rl-muted: #a8a29e;
++  --rl-line: #292524;
++  color-scheme: dark;
++}
++
+ * {
+   box-sizing: border-box;
+ }
+diff --git a/src/theme/tokens.ts b/src/theme/tokens.ts
+index b374b0e..669e098 100644
+--- a/src/theme/tokens.ts
++++ b/src/theme/tokens.ts
+@@ -1,6 +1,9 @@
+-// The light palette. theme.css mirrors these values as CSS custom properties for
+-// the page chrome; the Gauge reads them here because its bar color depends on the
+-// reading (alert or not) and its track is a tint of that color, both set inline.
++// Palettes. theme.css mirrors these values as CSS custom properties for the page
++// chrome (light on :root, dark on :root[data-theme="dark"]); the Gauge reads them
++// here because its bar color depends on the reading (alert or not) and its track
++// is a tint of that color, both set inline.
++
++export type ThemeName = "light" | "dark";
+ 
+ export interface Palette {
+   bg: string;
+@@ -12,7 +15,7 @@ export interface Palette {
+   alert: string;
+ }
+ 
+-export const palette: Palette = {
++export const light: Palette = {
+   bg: "#f5f5f4",
+   surface: "#ffffff",
+   ink: "#1c1917",
+@@ -21,3 +24,18 @@ export const palette: Palette = {
+   bar: "#0d9488",
+   alert: "#c2410c",
+ };
++
++export const dark: Palette = {
++  bg: "#0c0a09",
++  surface: "#1c1917",
++  ink: "#fafaf9",
++  muted: "#a8a29e",
++  line: "#292524",
++  bar: "#2dd4bf",
++  alert: "#fb923c",
++};
++
++export const palettes: Record<ThemeName, Palette> = { light, dark };
++
++/** The light palette, under its original name. */
++export const palette = light;

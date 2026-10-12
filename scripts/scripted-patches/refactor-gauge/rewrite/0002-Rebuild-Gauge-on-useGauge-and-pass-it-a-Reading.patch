@@ -1,0 +1,163 @@
+From 570beee8fb4bc26f8045d2e371c2a4718d9205e2 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:45:19 -0700
+Subject: [PATCH 2/3] Rebuild Gauge on useGauge and pass it a Reading
+
+Gauge is now presentation only: it spreads the hook's meter and toggle
+props and picks colors. It takes the API's Reading object (reading=...)
+instead of loose value/min/max/alertAt props, so RiverCard passes
+river.stage and friends straight through. The gauge test builds a Reading
+from its flat fixtures; its assertions are unchanged.
+---
+ src/components/Gauge.tsx     | 68 +++++++-----------------------------
+ src/components/RiverCard.tsx |  6 ++--
+ test/gauge.test.tsx          | 27 +++++++++++---
+ 3 files changed, 38 insertions(+), 63 deletions(-)
+
+diff --git a/src/components/Gauge.tsx b/src/components/Gauge.tsx
+index e5a6e6b..8d994bc 100644
+--- a/src/components/Gauge.tsx
++++ b/src/components/Gauge.tsx
+@@ -1,72 +1,30 @@
+-import { useState } from "react";
++import { useGauge, type Units } from "../hooks/useGauge";
+ import { palette } from "../theme/tokens";
+-import type { GaugeKind } from "../types";
++import type { GaugeKind, Reading } from "../types";
+ 
+ export interface GaugeProps {
+   kind: GaugeKind;
+   label: string;
+-  /** Reading in US units: feet (stage), cubic feet per second (flow), °F (temp). */
+-  value: number;
+-  min: number;
+-  max: number;
+-  /** At or above this value the bar switches to the alert color. */
+-  alertAt?: number;
++  /** A reading as the API returns it (US units). */
++  reading: Reading;
+   /** Units shown until the reader clicks the value to switch. */
+-  defaultUnits?: "us" | "metric";
++  defaultUnits?: Units;
+ }
+ 
+-export function Gauge({ kind, label, value, min, max, alertAt, defaultUnits = "us" }: GaugeProps) {
+-  const [units, setUnits] = useState(defaultUnits);
+-  const metric = units === "metric";
+-
+-  let shown = value;
+-  let unit = "ft";
+-  if (kind === "stage") {
+-    shown = metric ? value * 0.3048 : value;
+-    unit = metric ? "m" : "ft";
+-  } else if (kind === "flow") {
+-    shown = metric ? value * 0.0283168 : value;
+-    unit = metric ? "m³/s" : "cfs";
+-  } else {
+-    shown = metric ? ((value - 32) * 5) / 9 : value;
+-    unit = metric ? "°C" : "°F";
+-  }
+-
+-  let reading: string;
+-  if (kind === "temp") reading = `${Math.round(shown)}${unit}`;
+-  else if (kind === "flow" && !metric) reading = `${Math.round(shown).toLocaleString("en-US")} ${unit}`;
+-  else reading = `${shown.toFixed(1)} ${unit}`;
+-
+-  const span = max - min;
+-  const pct = span > 0 ? Math.min(100, Math.max(0, ((value - min) / span) * 100)) : 0;
+-  const alert = alertAt !== undefined && value >= alertAt;
+-  const barColor = alert ? palette.alert : palette.bar;
++export function Gauge({ kind, label, reading, defaultUnits }: GaugeProps) {
++  const gauge = useGauge(kind, label, reading, defaultUnits);
++  const barColor = gauge.alert ? palette.alert : palette.bar;
+ 
+   return (
+-    <div className="gauge" data-kind={kind} data-alert={alert || undefined}>
++    <div className="gauge" data-kind={kind} data-alert={gauge.alert || undefined}>
+       <span className="gauge-label" style={{ color: palette.muted }}>
+         {label}
+       </span>
+-      <div
+-        className="gauge-track"
+-        role="meter"
+-        aria-label={label}
+-        aria-valuemin={min}
+-        aria-valuemax={max}
+-        aria-valuenow={value}
+-        aria-valuetext={reading}
+-        style={{ background: `${barColor}22` }}
+-      >
+-        <div className="gauge-bar" style={{ width: `${Math.round(pct)}%`, background: barColor }} />
++      <div className="gauge-track" {...gauge.getMeterProps()} style={{ background: `${barColor}22` }}>
++        <div className="gauge-bar" style={{ width: `${Math.round(gauge.pct)}%`, background: barColor }} />
+       </div>
+-      <button
+-        type="button"
+-        className="gauge-value"
+-        title={metric ? "Show US units" : "Show metric units"}
+-        onClick={() => setUnits(metric ? "us" : "metric")}
+-        style={{ color: palette.ink }}
+-      >
+-        {reading}
++      <button className="gauge-value" {...gauge.getToggleProps()} style={{ color: palette.ink }}>
++        {gauge.text}
+       </button>
+     </div>
+   );
+diff --git a/src/components/RiverCard.tsx b/src/components/RiverCard.tsx
+index eb0640b..2e89ded 100644
+--- a/src/components/RiverCard.tsx
++++ b/src/components/RiverCard.tsx
+@@ -16,9 +16,9 @@ export function RiverCard({ river }: { river: River }) {
+         <span className="river-site">{river.site}</span>
+       </header>
+       <div className="river-gauges">
+-        <Gauge kind="stage" label="Stage" {...river.stage} />
+-        <Gauge kind="flow" label="Flow" {...river.flow} />
+-        <Gauge kind="temp" label="Temp" {...river.temp} />
++        <Gauge kind="stage" label="Stage" reading={river.stage} />
++        <Gauge kind="flow" label="Flow" reading={river.flow} />
++        <Gauge kind="temp" label="Temp" reading={river.temp} />
+       </div>
+       <footer className="river-updated">{`Updated ${formatUpdated(river.updatedAt)}`}</footer>
+     </article>
+diff --git a/test/gauge.test.tsx b/test/gauge.test.tsx
+index d57d8b6..d70b390 100644
+--- a/test/gauge.test.tsx
++++ b/test/gauge.test.tsx
+@@ -1,13 +1,30 @@
+ import { renderToString } from "react-dom/server";
+ import { describe, expect, it } from "vitest";
+-import { Gauge, type GaugeProps } from "../src/components/Gauge";
++import { Gauge } from "../src/components/Gauge";
+ import { palette } from "../src/theme/tokens";
++import type { GaugeKind } from "../src/types";
+ 
+-const stage: GaugeProps = { kind: "stage", label: "Stage", value: 6.2, min: 0, max: 10, alertAt: 9 };
+-const flow: GaugeProps = { kind: "flow", label: "Flow", value: 4810, min: 0, max: 10000 };
+-const temp: GaugeProps = { kind: "temp", label: "Temp", value: 51, min: 32, max: 86 };
++/** Flat fixtures, so each case can override one field; html() builds the Reading. */
++interface Fixture {
++  kind: GaugeKind;
++  label: string;
++  value: number;
++  min: number;
++  max: number;
++  alertAt?: number;
++  defaultUnits?: "us" | "metric";
++}
+ 
+-const html = (props: GaugeProps) => renderToString(<Gauge {...props} />);
++const UNIT = { stage: "ft", flow: "cfs", temp: "°F" } as const;
++
++const stage: Fixture = { kind: "stage", label: "Stage", value: 6.2, min: 0, max: 10, alertAt: 9 };
++const flow: Fixture = { kind: "flow", label: "Flow", value: 4810, min: 0, max: 10000 };
++const temp: Fixture = { kind: "temp", label: "Temp", value: 51, min: 32, max: 86 };
++
++const html = ({ kind, label, defaultUnits, value, min, max, alertAt }: Fixture) =>
++  renderToString(
++    <Gauge kind={kind} label={label} defaultUnits={defaultUnits} reading={{ value, unit: UNIT[kind], min, max, alertAt }} />,
++  );
+ 
+ describe("Gauge", () => {
+   it("formats stage in feet with one decimal", () => {

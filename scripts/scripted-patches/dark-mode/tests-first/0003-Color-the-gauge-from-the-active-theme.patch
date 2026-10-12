@@ -1,0 +1,31 @@
+From c415141fcf7296ff28161eeca61ecdc7c02a9c6c Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:21:44 -0700
+Subject: [PATCH 3/4] Color the gauge from the active theme
+
+Gauge read the light palette directly, so it stayed light on a dark page.
+It now takes the palette from ThemeContext. Outside a provider it is
+still light, so existing renders and tests are unchanged.
+---
+ src/components/Gauge.tsx | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/components/Gauge.tsx b/src/components/Gauge.tsx
+index e5a6e6b..8bf5eee 100644
+--- a/src/components/Gauge.tsx
++++ b/src/components/Gauge.tsx
+@@ -1,5 +1,5 @@
+ import { useState } from "react";
+-import { palette } from "../theme/tokens";
++import { usePalette } from "../theme/ThemeContext";
+ import type { GaugeKind } from "../types";
+ 
+ export interface GaugeProps {
+@@ -16,6 +16,7 @@ export interface GaugeProps {
+ }
+ 
+ export function Gauge({ kind, label, value, min, max, alertAt, defaultUnits = "us" }: GaugeProps) {
++  const palette = usePalette();
+   const [units, setUnits] = useState(defaultUnits);
+   const metric = units === "metric";
+ 

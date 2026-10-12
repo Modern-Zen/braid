@@ -1,0 +1,80 @@
+From da79ad6d83d5b1a79826cd93a8335a3463f88839 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:17:50 -0700
+Subject: [PATCH 2/3] Read gauge colors from theme tokens
+
+The gauge set its colors inline from the light palette, so it stayed light in a dark page. It now uses the var(--rl-*) tokens, and the track tint uses color-mix() because a hex alpha suffix can't be appended to a CSS variable. The gauge test checks for the token instead of the light hex.
+---
+ src/components/Gauge.tsx | 10 +++++-----
+ test/gauge.test.tsx      |  6 +++---
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/src/components/Gauge.tsx b/src/components/Gauge.tsx
+index e5a6e6b..ff574b9 100644
+--- a/src/components/Gauge.tsx
++++ b/src/components/Gauge.tsx
+@@ -1,5 +1,5 @@
+ import { useState } from "react";
+-import { palette } from "../theme/tokens";
++import { tokens } from "../theme/tokens";
+ import type { GaugeKind } from "../types";
+ 
+ export interface GaugeProps {
+@@ -40,11 +40,11 @@ export function Gauge({ kind, label, value, min, max, alertAt, defaultUnits = "u
+   const span = max - min;
+   const pct = span > 0 ? Math.min(100, Math.max(0, ((value - min) / span) * 100)) : 0;
+   const alert = alertAt !== undefined && value >= alertAt;
+-  const barColor = alert ? palette.alert : palette.bar;
++  const barColor = alert ? tokens.alert : tokens.bar;
+ 
+   return (
+     <div className="gauge" data-kind={kind} data-alert={alert || undefined}>
+-      <span className="gauge-label" style={{ color: palette.muted }}>
++      <span className="gauge-label" style={{ color: tokens.muted }}>
+         {label}
+       </span>
+       <div
+@@ -55,7 +55,7 @@ export function Gauge({ kind, label, value, min, max, alertAt, defaultUnits = "u
+         aria-valuemax={max}
+         aria-valuenow={value}
+         aria-valuetext={reading}
+-        style={{ background: `${barColor}22` }}
++        style={{ background: `color-mix(in srgb, ${barColor} 13%, transparent)` }}
+       >
+         <div className="gauge-bar" style={{ width: `${Math.round(pct)}%`, background: barColor }} />
+       </div>
+@@ -64,7 +64,7 @@ export function Gauge({ kind, label, value, min, max, alertAt, defaultUnits = "u
+         className="gauge-value"
+         title={metric ? "Show US units" : "Show metric units"}
+         onClick={() => setUnits(metric ? "us" : "metric")}
+-        style={{ color: palette.ink }}
++        style={{ color: tokens.ink }}
+       >
+         {reading}
+       </button>
+diff --git a/test/gauge.test.tsx b/test/gauge.test.tsx
+index d57d8b6..21ad69f 100644
+--- a/test/gauge.test.tsx
++++ b/test/gauge.test.tsx
+@@ -1,7 +1,7 @@
+ import { renderToString } from "react-dom/server";
+ import { describe, expect, it } from "vitest";
+ import { Gauge, type GaugeProps } from "../src/components/Gauge";
+-import { palette } from "../src/theme/tokens";
++import { tokens } from "../src/theme/tokens";
+ 
+ const stage: GaugeProps = { kind: "stage", label: "Stage", value: 6.2, min: 0, max: 10, alertAt: 9 };
+ const flow: GaugeProps = { kind: "flow", label: "Flow", value: 4810, min: 0, max: 10000 };
+@@ -41,10 +41,10 @@ describe("Gauge", () => {
+   it("switches to the alert color at the alert threshold", () => {
+     const calm = html(stage);
+     expect(calm).not.toContain("data-alert");
+-    expect(calm).toContain(`background:${palette.bar}`);
++    expect(calm).toContain(`background:${tokens.bar}`);
+ 
+     const high = html({ ...stage, value: 9 });
+     expect(high).toContain('data-alert="true"');
+-    expect(high).toContain(`background:${palette.alert}`);
++    expect(high).toContain(`background:${tokens.alert}`);
+   });
+ });

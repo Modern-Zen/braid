@@ -1,0 +1,94 @@
+From f95d1f01a3bc9fa8614b9c6b3039e457d872fb84 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:34:35 -0700
+Subject: [PATCH 2/4] Rate-limit /api with RateLimit headers, failing closed
+
+Every /api request takes a token from its caller's TokenBucket (keyed by
+a SHA-256 of the bearer token, else the IP). Responses carry the IETF
+RateLimit-Policy and RateLimit headers. An empty bucket answers 429
+{ error: "rate_limited", retryAfter } with Retry-After, which is 1 s at
+10 req/s. Without a reachable limiter the API answers 503 rather than
+serving unlimited traffic.
+---
+ src/api/index.ts                |  7 ++++-
+ src/api/ratelimit/middleware.ts | 53 +++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 1 deletion(-)
+ create mode 100644 src/api/ratelimit/middleware.ts
+
+diff --git a/src/api/index.ts b/src/api/index.ts
+index 1dff939..7ac5c08 100644
+--- a/src/api/index.ts
++++ b/src/api/index.ts
+@@ -1,7 +1,12 @@
+ import { Hono } from "hono";
++import type { Env } from "../env";
+ import { level, levels } from "./levels";
++import { rateLimit } from "./ratelimit/middleware";
+ 
+-export const api = new Hono();
++export const api = new Hono<{ Bindings: Env }>();
++
++// Every /api route, including unknown ones, counts toward the caller's limit.
++api.use("*", rateLimit());
+ 
+ api.get("/levels", levels);
+ api.get("/levels/:id", level);
+diff --git a/src/api/ratelimit/middleware.ts b/src/api/ratelimit/middleware.ts
+new file mode 100644
+index 0000000..99cfcb1
+--- /dev/null
++++ b/src/api/ratelimit/middleware.ts
+@@ -0,0 +1,53 @@
++import { createMiddleware } from "hono/factory";
++import type { Env } from "../../env";
++import { API_LIMIT, type Decision, type Limit } from "./TokenBucket";
++
++/** The caller a request counts against: a hash of its bearer token, else its IP. */
++export async function callerKey(request: Request): Promise<string> {
++  const token = /^Bearer\s+(\S+)/i.exec(request.headers.get("authorization") ?? "")?.[1];
++  if (!token) return `ip:${request.headers.get("cf-connecting-ip") ?? "unknown"}`;
++  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
++  return `token:${[...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
++}
++
++/**
++ * Token-bucket rate limit for every route below it.
++ *
++ * Every response carries the IETF RateLimit headers (draft-ietf-httpapi-ratelimit-headers):
++ *   RateLimit-Policy: "burst";q=10;w=1
++ *   RateLimit: "burst";r=<remaining>;t=<seconds until full>
++ * Over the limit: 429 { error: "rate_limited", retryAfter } with Retry-After.
++ *
++ * Fails closed: without a working limiter the API answers 503 instead of
++ * serving unlimited traffic.
++ */
++export function rateLimit(limit: Limit = API_LIMIT) {
++  return createMiddleware<{ Bindings: Env }>(async (c, next) => {
++    const namespace = c.env?.RATE_LIMITER;
++    let decision: Decision;
++    try {
++      if (!namespace) throw new Error("RATE_LIMITER binding is missing");
++      const bucket = namespace.get(namespace.idFromName(await callerKey(c.req.raw)));
++      decision = await bucket.take(limit);
++    } catch (err) {
++      console.error("rate limiter unavailable", err);
++      return c.json({ error: "rate_limiter_unavailable" }, 503);
++    }
++
++    const window = Math.ceil(limit.capacity / limit.refillPerSecond);
++    const headers = {
++      "RateLimit-Policy": `"burst";q=${limit.capacity};w=${window}`,
++      RateLimit: `"burst";r=${decision.remaining};t=${decision.resetSeconds}`,
++    };
++
++    if (!decision.allowed) {
++      return c.json({ error: "rate_limited", retryAfter: decision.retryAfterSeconds }, 429, {
++        ...headers,
++        "Retry-After": String(decision.retryAfterSeconds),
++      });
++    }
++
++    await next();
++    for (const [name, value] of Object.entries(headers)) c.res.headers.set(name, value);
++  });
++}

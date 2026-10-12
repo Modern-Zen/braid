@@ -1,0 +1,35 @@
+{
+  "intent": "dark-mode",
+  "strategy": "rewrite",
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "recordedAt": "2026-10-12T20:26:33Z",
+  "base": "a1e0aaba4cae0b27a958621c7f527aea2336f8d1",
+  "commits": [
+    {
+      "file": "0001-Detect-the-system-color-scheme.patch",
+      "subject": "Detect the system color scheme",
+      "delaySec": [10, 20]
+    },
+    {
+      "file": "0002-Rewrite-the-gauge-with-its-own-light-and-dark-colors.patch",
+      "subject": "Rewrite the gauge with its own light and dark colors",
+      "delaySec": [25, 40]
+    },
+    {
+      "file": "0003-Rewrite-the-card-and-page-in-light-and-dark.patch",
+      "subject": "Rewrite the card and page in light and dark",
+      "delaySec": [25, 40]
+    },
+    {
+      "file": "0004-Test-the-dark-gauge-card-and-page.patch",
+      "subject": "Test the dark gauge, card and page",
+      "delaySec": [15, 30]
+    }
+  ],
+  "turns": 18,
+  "durationMs": 161000,
+  "costUsd": null,
+  "lines": ["src/theme/**", "src/components/**", "src/App.tsx", "test/gauge.test.tsx", "test/dark-mode.test.tsx"],
+  "notes": "Dark-first rewrite: Gauge, RiverCard and App each hard-code a light and a dark color set and take a scheme prop from useColorScheme() (prefers-color-scheme, live). Gauge rewritten (table-driven units, new layout, alert tints the track); theme.css reduced to layout; tokens.ts deleted; two assertions in test/gauge.test.tsx changed to GAUGE_COLORS. 18/18, pnpm build passes. Widest diff of the three; overlaps refactor-gauge on src/components/Gauge.tsx and src/components/RiverCard.tsx."
+}

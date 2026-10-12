@@ -1,0 +1,9 @@
+{
+  "pair": ["dark-mode.rewrite", "refactor-gauge.minimal-diff"],
+  "conflicted": ["src/components/Gauge.tsx"],
+  "touched": ["src/components/Gauge.tsx"],
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "notes": "Dark-mode rewrote all of Gauge.tsx (per-scheme GAUGE_COLORS, a scheme prop, a header-row layout, an alert-tinted track, and its own table-driven formatting), and the refactor moved the gauge's logic into useGauge(). The resolution splits along that line: the presentation is dark-mode's (GAUGE_COLORS stays exported for its tests, plus the scheme prop, layout and alertTrack), and the logic comes from the refactor's hook. Dark-mode's inline SCALES table is dropped, because the logic now lives in the hook, so formatting is the hook's (identical for every current reading; metric flow above 999 m³/s stays ungrouped).",
+  "tests": { "passed": 21, "total": 21 }
+}

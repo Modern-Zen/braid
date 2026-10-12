@@ -1,0 +1,30 @@
+{
+  "intent": "dark-mode",
+  "strategy": "minimal-diff",
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "recordedAt": "2026-10-12T20:19:13Z",
+  "base": "a1e0aaba4cae0b27a958621c7f527aea2336f8d1",
+  "commits": [
+    {
+      "file": "0001-Add-a-dark-palette-and-CSS-variables-for-every-theme.patch",
+      "subject": "Add a dark palette and CSS variables for every theme token",
+      "delaySec": [15, 30]
+    },
+    {
+      "file": "0002-Read-gauge-colors-from-theme-tokens.patch",
+      "subject": "Read gauge colors from theme tokens",
+      "delaySec": [10, 25]
+    },
+    {
+      "file": "0003-Test-the-dark-palette-s-coverage-and-contrast.patch",
+      "subject": "Test the dark palette's coverage and contrast",
+      "delaySec": [15, 35]
+    }
+  ],
+  "turns": 14,
+  "durationMs": 120000,
+  "costUsd": null,
+  "lines": ["src/theme/**", "src/components/Gauge.tsx", "test/gauge.test.tsx", "test/theme.test.tsx"],
+  "notes": "Theme-token layer: dark palette in tokens.ts, CSS variables with a prefers-color-scheme: dark override in theme.css, and the Gauge switched from the light palette to var(--rl-*) tokens (track tint via color-mix). No toggle. Two assertions in test/gauge.test.tsx changed from the light hex to the token; 4 new tests. pnpm build passes. Overlaps refactor-gauge on src/components/Gauge.tsx."
+}

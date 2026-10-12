@@ -1,0 +1,97 @@
+From 2a76194db1554fe38d0620a65b5cda9d72728efb Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:38:23 -0700
+Subject: [PATCH 1/2] Add a Durable Object rate limiter and cache helper
+
+src/api/rateLimit.ts holds all of it: a RateLimiter Durable Object (one
+token bucket per caller, 10 per second), the rateLimit middleware that
+asks it, and cache(seconds). Bound as RATE_LIMITER in wrangler.jsonc and
+exported from the Worker. Not wired into the API yet.
+---
+ src/api/rateLimit.ts | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ src/worker.ts        |  5 ++++-
+ wrangler.jsonc       |  4 +++-
+ 3 files changed, 51 insertions(+), 2 deletions(-)
+ create mode 100644 src/api/rateLimit.ts
+
+diff --git a/src/api/rateLimit.ts b/src/api/rateLimit.ts
+new file mode 100644
+index 0000000..c6a1260
+--- /dev/null
++++ b/src/api/rateLimit.ts
+@@ -0,0 +1,44 @@
++import type { MiddlewareHandler } from "hono";
++
++const LIMIT = 10; // req/s per token, also the burst size
++
++interface Namespace {
++  idFromName(name: string): unknown;
++  get(id: unknown): { fetch(url: string): Promise<Response> };
++}
++
++export type RateLimitEnv = { Bindings: { RATE_LIMITER?: Namespace } };
++
++/** Durable Object: one token bucket per caller, refilled at LIMIT tokens per second. */
++export class RateLimiter {
++  private tokens = LIMIT;
++  private last = Date.now();
++
++  async fetch(): Promise<Response> {
++    const now = Date.now();
++    this.tokens = Math.min(LIMIT, this.tokens + ((now - this.last) / 1000) * LIMIT);
++    this.last = now;
++    const ok = this.tokens >= 1;
++    if (ok) this.tokens -= 1;
++    return new Response(ok ? "ok" : "limited", { status: ok ? 200 : 429 });
++  }
++}
++
++/** 429 `{ error: "rate_limited", retryAfter: 1 }` once a caller's bucket is empty. */
++export const rateLimit: MiddlewareHandler<RateLimitEnv> = async (c, next) => {
++  const limiter = c.env?.RATE_LIMITER;
++  if (limiter) {
++    const key = c.req.header("authorization") ?? c.req.header("cf-connecting-ip") ?? "anonymous";
++    const res = await limiter.get(limiter.idFromName(key)).fetch("https://limiter/");
++    if (res.status === 429) return c.json({ error: "rate_limited", retryAfter: 1 }, 429);
++  }
++  await next();
++};
++
++/** Cache-Control: max-age=<seconds> on successful responses. */
++export const cache =
++  (seconds: number): MiddlewareHandler =>
++  async (c, next) => {
++    await next();
++    if (c.res.status === 200) c.header("Cache-Control", `max-age=${seconds}`);
++  };
+diff --git a/src/worker.ts b/src/worker.ts
+index f2e7fc6..9d57754 100644
+--- a/src/worker.ts
++++ b/src/worker.ts
+@@ -1,9 +1,12 @@
+ import { Hono } from "hono";
+ import { api } from "./api";
++import type { RateLimitEnv } from "./api/rateLimit";
++
++export { RateLimiter } from "./api/rateLimit";
+ 
+ // The Worker answers /api/*. Everything else is the built UI in dist/, served as
+ // static assets (see `assets` in wrangler.jsonc).
+-export const app = new Hono();
++export const app = new Hono<RateLimitEnv>();
+ 
+ app.route("/api", api);
+ app.notFound((c) => c.json({ error: "not_found" }, 404));
+diff --git a/wrangler.jsonc b/wrangler.jsonc
+index ca17397..72a825d 100644
+--- a/wrangler.jsonc
++++ b/wrangler.jsonc
+@@ -10,5 +10,7 @@
+     "directory": "./dist",
+     "not_found_handling": "single-page-application",
+     "run_worker_first": ["/api/*"]
+-  }
++  },
++  "durable_objects": { "bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }] },
++  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RateLimiter"] }]
+ }

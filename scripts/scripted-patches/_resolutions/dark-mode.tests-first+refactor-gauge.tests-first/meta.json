@@ -1,0 +1,9 @@
+{
+  "pair": ["dark-mode.tests-first", "refactor-gauge.tests-first"],
+  "conflicted": ["src/components/Gauge.tsx"],
+  "touched": ["src/components/Gauge.tsx"],
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "notes": "Dark-mode's `const palette = usePalette()` and ThemeContext import meet the refactor's useGauge() call, Units type and units-based title. The resolution keeps the theme-aware palette from dark-mode and the extracted hook from the refactor; the color expressions are the same on both sides. Both sides' test suites (dark mode's theme tests, the refactor's characterization and spec tests) pass unchanged.",
+  "tests": { "passed": 32, "total": 32 }
+}
