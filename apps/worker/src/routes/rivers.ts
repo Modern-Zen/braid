@@ -16,6 +16,7 @@ import { commitView } from "../commits.ts";
 import { deleteRiverWork, getChannel, listChannels, listRivers } from "../db.ts";
 import { decide, eddyView } from "../eddy.ts";
 import { issueAgentToken } from "../mcp.ts";
+import { replayChannel, type ReplayRequest } from "../replay.ts";
 import { scoutView } from "../scout.ts";
 import { createRiver, HttpError, openIntent, refreshHead, riverSummary, type CreateRiverRequest } from "../intents.ts";
 
@@ -57,6 +58,12 @@ rivers.post("/:id/intents", async (c) => {
 rivers.get("/:id/intents/:intent/scout", async (c) => {
   const view = await scoutView(c.env, c.req.param("id"), c.req.param("intent"));
   return view ? c.json(view) : c.json({ error: "not found" }, 404);
+});
+
+/** Replay from commit: fork a Channel at a commit into a new live Channel. */
+rivers.post("/:id/channels/:channel/replay", async (c) => {
+  const body = await c.req.json<ReplayRequest>();
+  return c.json(await replayChannel(c.env, c.req.param("id"), c.req.param("channel"), body), 201);
 });
 
 rivers.get("/:id/eddy", async (c) => c.json(await eddyView(c.env, c.req.param("id"))));
