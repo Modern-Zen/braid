@@ -1,0 +1,9 @@
+{
+  "pair": ["dark-mode.minimal-diff", "refactor-gauge.minimal-diff"],
+  "conflicted": ["src/components/Gauge.tsx"],
+  "touched": ["src/components/Gauge.tsx"],
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "notes": "Both Channels rewrote the top of Gauge.tsx: dark-mode swapped the light palette for var(--rl-*) tokens (import, barColor, label and value colors, color-mix track tint), and the refactor replaced the inline unit and formatting logic with a useGauge() call and onClick={toggleUnits}. The resolution keeps the refactor's extracted hook (src/hooks/useGauge.ts is untouched) and applies dark-mode's theme props to the presentation lines that stay in the component: the tokens import, tokens.alert/tokens.bar, tokens.muted, tokens.ink and the color-mix track. Behavior is the union of both: the same readings and toggle, colors that follow prefers-color-scheme.",
+  "tests": { "passed": 21, "total": 21 }
+}

@@ -1,0 +1,9 @@
+{
+  "pair": ["dark-mode.tests-first", "refactor-gauge.rewrite"],
+  "conflicted": ["src/components/Gauge.tsx"],
+  "touched": ["src/components/Gauge.tsx", "test/dark-mode.test.tsx"],
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "notes": "Gauge.tsx keeps the refactor's rewrite (prop getters, reading={Reading} props) and adds dark-mode's `const palette = usePalette()` in place of the light palette import, so the gauge follows ThemeContext. test/dark-mode.test.tsx merged without a textual conflict but built a Gauge from the old flat props; its fixture now uses a reading object (the alert case spreads it with value 9.5), and every assertion is unchanged. RiverCard already passes reading={...} from the refactor side.",
+  "tests": { "passed": 28, "total": 28 }
+}

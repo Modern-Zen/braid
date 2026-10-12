@@ -1,0 +1,9 @@
+{
+  "pair": ["dark-mode.minimal-diff", "refactor-gauge.tests-first"],
+  "conflicted": ["src/components/Gauge.tsx"],
+  "touched": ["src/components/Gauge.tsx"],
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "notes": "Same overlap as the minimal-diff pair: dark-mode changed the gauge's color expressions to var(--rl-*) tokens and a color-mix track, and the refactor replaced the inline logic with useGauge() (exposing units rather than a metric flag) and typed defaultUnits as Units. The resolution keeps the refactor's hook, gaugeReading() and Units type, and its units-based title, and applies dark-mode's tokens import, tokens.* colors and color-mix track to the presentation lines. Both sides' tests run unchanged, including the refactor's characterization tests.",
+  "tests": { "passed": 27, "total": 27 }
+}

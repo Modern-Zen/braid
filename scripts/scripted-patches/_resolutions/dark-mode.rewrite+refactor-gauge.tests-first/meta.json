@@ -1,0 +1,9 @@
+{
+  "pair": ["dark-mode.rewrite", "refactor-gauge.tests-first"],
+  "conflicted": ["src/components/Gauge.tsx"],
+  "touched": ["src/components/Gauge.tsx"],
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "notes": "As with the minimal-diff refactor, dark-mode's rewrite supplies the presentation (GAUGE_COLORS, scheme prop, header-row layout, alert-tinted track) and the refactor supplies the logic (useGauge over the pure gaugeReading, the Units type and a units-based title). Dark-mode's inline SCALES table is dropped in favor of the hook. That matters here: the refactor's characterization tests pin ungrouped metric flow ('1132.7 m³/s'), which the hook preserves and dark-mode's toLocaleString formatting would have broken.",
+  "tests": { "passed": 27, "total": 27 }
+}

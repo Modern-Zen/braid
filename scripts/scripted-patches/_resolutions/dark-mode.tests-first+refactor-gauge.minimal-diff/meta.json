@@ -1,0 +1,9 @@
+{
+  "pair": ["dark-mode.tests-first", "refactor-gauge.minimal-diff"],
+  "conflicted": ["src/components/Gauge.tsx"],
+  "touched": ["src/components/Gauge.tsx"],
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "notes": "Dark-mode added `const palette = usePalette()` (from ThemeContext) as the first line of the component and swapped the import, while the refactor replaced the logic block under it with useGauge(). The resolution keeps both: the palette comes from the active theme, and the readings, fill, alert and unit toggle come from the extracted hook. The color lines are unchanged from either side.",
+  "tests": { "passed": 26, "total": 26 }
+}
