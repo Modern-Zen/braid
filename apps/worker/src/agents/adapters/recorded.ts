@@ -24,11 +24,15 @@ export interface RecordedSeries {
   commits: RecordedCommit[];
 }
 
+/** Combined resolved contents for a pair of conflicting series (either can land first). */
 export interface RecordedResolution {
-  intent: string;
-  file: string;
-  patch: string;
+  /** ["dark-mode.minimal-diff", "refactor-gauge.minimal-diff"], intents in alphabetical order. */
+  pair: string[];
+  conflicted: string[];
+  agent: string;
+  model: string;
   notes: string;
+  files: Record<string, string>;
 }
 
 export function recordedSeries(intent: string, strategy: string): RecordedSeries | null {
@@ -41,8 +45,10 @@ export function recordedStrategies(intent: string): string[] {
     .map((s) => s.strategy);
 }
 
-export function recordedResolutions(intent: string): RecordedResolution[] {
-  return Object.values(RESOLUTIONS).filter((r) => r.intent === intent);
+/** The recorded resolution for two series, in either order. */
+export function recordedResolution(a: string, b: string): RecordedResolution | null {
+  const key = [a, b].sort().join("+");
+  return RESOLUTIONS[key] ?? null;
 }
 
 /** Subject and body from a `git format-patch` file. */

@@ -58,6 +58,9 @@ export class RiverAgent extends Agent<Env, RiverState> {
       PRIMARY KEY (channel_id, glob))`;
     this.sql`CREATE TABLE IF NOT EXISTS presence (
       channel_id TEXT PRIMARY KEY, agent TEXT, model TEXT, seen_at INTEGER NOT NULL)`;
+    this.sql`CREATE TABLE IF NOT EXISTS merges (
+      intent_id TEXT PRIMARY KEY, channel_id TEXT NOT NULL, by TEXT NOT NULL, state TEXT NOT NULL,
+      attempt INTEGER NOT NULL, workflow_id TEXT, enqueued_at INTEGER NOT NULL)`;
     if (this.state.riverId !== this.name) this.setState({ ...this.state, riverId: this.name });
   }
 
@@ -83,6 +86,7 @@ export class RiverAgent extends Agent<Env, RiverState> {
   async reset(): Promise<void> {
     this.sql`DELETE FROM lines`;
     this.sql`DELETE FROM presence`;
+    this.sql`DELETE FROM merges`;
     this.sql`DELETE FROM feed`;
     this.setState({
       ...this.initialState,
@@ -135,6 +139,7 @@ export class RiverAgent extends Agent<Env, RiverState> {
 
     const counters = { ...this.state.counters };
     if (event.type === "repo.pushed") counters.commits += Number(event.data?.commits ?? 1);
+    if (event.type === "confluence.picked") counters.commits += Number(event.data?.commits ?? 1);
     if (event.type === "preview.ready") counters.previews += 1;
     if (event.type === "confluence.picked" && event.by === "auto") counters.autoMerged += 1;
     const feed = [event, ...this.state.feed.filter((e) => e.id !== event.id)]
@@ -238,6 +243,58 @@ export class RiverAgent extends Agent<Env, RiverState> {
     const overlaps = this.state.overlaps.filter((o) => holders.has(o.a) && holders.has(o.b));
     this.setState({ ...this.state, lines, overlaps });
     return removed;
+  }
+
+  // ── Confluence queue (one merge at a time per River) ──────────────────────
+
+  /** Queue a Channel to merge. Idempotent per Intent unless the previous attempt failed. */
+  async enqueueMerge(m: { intentId: string; channelId: string; by: "auto" | "you" }): Promise<{ attempt: number }> {
+    const prev = this.sql<{ attempt: number; state: string }>`SELECT attempt, state FROM merges WHERE intent_id = ${m.intentId}`[0];
+    if (prev && ["queued", "running", "parked", "merged"].includes(prev.state)) return { attempt: prev.attempt };
+    const attempt = (prev?.attempt ?? 0) + 1;
+    this.sql`INSERT INTO merges (intent_id, channel_id, by, state, attempt, workflow_id, enqueued_at)
+      VALUES (${m.intentId}, ${m.channelId}, ${m.by}, 'queued', ${attempt}, NULL, ${Date.now()})
+      ON CONFLICT(intent_id) DO UPDATE SET channel_id = excluded.channel_id, by = excluded.by, state = 'queued',
+        attempt = excluded.attempt, workflow_id = NULL, enqueued_at = excluded.enqueued_at`;
+    await this.pumpMerges();
+    return { attempt };
+  }
+
+  /** A run waiting on a person releases the lock so other Intents can merge meanwhile. */
+  async mergeParked(intentId: string): Promise<void> {
+    this.sql`UPDATE merges SET state = 'parked' WHERE intent_id = ${intentId} AND state = 'running'`;
+    await this.pumpMerges();
+  }
+
+  async mergeResumed(intentId: string): Promise<void> {
+    this.sql`UPDATE merges SET state = 'running' WHERE intent_id = ${intentId} AND state = 'parked'`;
+  }
+
+  async mergeFinished(intentId: string, outcome: "merged" | "failed" | "dropped"): Promise<void> {
+    this.sql`UPDATE merges SET state = ${outcome} WHERE intent_id = ${intentId}`;
+    await this.pumpMerges();
+  }
+
+  private async pumpMerges(): Promise<void> {
+    const running = this.sql<{ n: number }>`SELECT COUNT(*) AS n FROM merges WHERE state = 'running'`[0]?.n ?? 0;
+    if (running > 0) return;
+    const next = this.sql<{ intent_id: string; channel_id: string; by: string; attempt: number }>`
+      SELECT intent_id, channel_id, by, attempt FROM merges WHERE state = 'queued' ORDER BY enqueued_at LIMIT 1`[0];
+    if (!next) return;
+    const id = `cf-${this.name}-${next.intent_id}-${next.attempt}`;
+    this.sql`UPDATE merges SET state = 'running', workflow_id = ${id} WHERE intent_id = ${next.intent_id}`;
+    try {
+      await this.env.CONFLUENCE_WF.create({
+        id,
+        params: { riverId: this.name, intentId: next.intent_id, channelId: next.channel_id, attempt: next.attempt, by: next.by as "auto" | "you" },
+      });
+    } catch (err) {
+      // Already created (a retried pump): the instance is running; keep the lock.
+      if (!/already exists|duplicate/i.test(String(err))) {
+        this.sql`UPDATE merges SET state = 'failed' WHERE intent_id = ${next.intent_id}`;
+        throw err;
+      }
+    }
   }
 
   async heartbeat(channelId: string, agent: string, model?: string): Promise<void> {

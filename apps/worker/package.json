@@ -13,6 +13,7 @@
     "db:migrate:local": "wrangler d1 migrations apply braid --local"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@braid/protocol": "workspace:*",
     "@cloudflare/sandbox": "1.0.0",
     "@modelcontextprotocol/server": "2.0.0",

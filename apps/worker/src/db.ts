@@ -258,3 +258,112 @@ export async function deleteRiverWork(db: D1Database, riverId: string): Promise<
     db.prepare("UPDATE rivers SET next_channel = 1, next_logbook = 1 WHERE id = ?").bind(riverId),
   ]);
 }
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+export interface ReviewRow {
+  repo: string;
+  sha: string;
+  river_id: string;
+  channel_id: string;
+  intent_id: string;
+  state: "running" | "passed" | "failed";
+  tests_passed: number | null;
+  tests_total: number | null;
+  failures: string | null;
+  added: number | null;
+  removed: number | null;
+  files: number | null;
+  risk: number | null;
+  risk_reasons: string | null;
+  log_key: string | null;
+  created_at: number;
+}
+
+/** Claim a review for (repo, sha). Returns false if one already exists (idempotency). */
+export async function claimReview(
+  db: D1Database,
+  r: { repo: string; sha: string; riverId: string; channelId: string; intentId: string },
+): Promise<boolean> {
+  const now = Date.now();
+  const res = await db
+    .prepare(
+      `INSERT INTO reviews (repo, sha, river_id, channel_id, intent_id, state, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'running', ?, ?) ON CONFLICT DO NOTHING`,
+    )
+    .bind(r.repo, r.sha, r.riverId, r.channelId, r.intentId, now, now)
+    .run();
+  return (res.meta.changes ?? 0) > 0;
+}
+
+export async function finishReview(
+  db: D1Database,
+  repo: string,
+  sha: string,
+  r: {
+    ok: boolean;
+    passed: number;
+    total: number;
+    failures: string[];
+    added: number;
+    removed: number;
+    files: number;
+    risk: number;
+    reasons: string[];
+    logKey: string | null;
+  },
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE reviews SET state = ?, tests_passed = ?, tests_total = ?, failures = ?, added = ?, removed = ?, files = ?,
+         risk = ?, risk_reasons = ?, log_key = ?, updated_at = ? WHERE repo = ? AND sha = ?`,
+    )
+    .bind(
+      r.ok ? "passed" : "failed",
+      r.passed,
+      r.total,
+      JSON.stringify(r.failures),
+      r.added,
+      r.removed,
+      r.files,
+      r.risk,
+      JSON.stringify(r.reasons),
+      r.logKey,
+      Date.now(),
+      repo,
+      sha,
+    )
+    .run();
+}
+
+export async function getReview(db: D1Database, repo: string, sha: string): Promise<ReviewRow | null> {
+  return db.prepare("SELECT * FROM reviews WHERE repo = ? AND sha = ?").bind(repo, sha).first<ReviewRow>();
+}
+
+export async function recordEventIndex(db: D1Database, e: { key: string; type: string; repo: string; rawKey: string }): Promise<boolean> {
+  const res = await db
+    .prepare("INSERT INTO events_index (key, type, repo, raw_key, received_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING")
+    .bind(e.key, e.type, e.repo, e.rawKey, Date.now())
+    .run();
+  return (res.meta.changes ?? 0) > 0;
+}
+
+export async function insertLogbookIndex(
+  db: D1Database,
+  e: { riverId: string; number: string; channelId: string; intentId: string; repo: string; path: string; agent: string; model?: string },
+): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO logbook_index (river_id, number, channel_id, intent_id, repo, path, agent, model, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
+    )
+    .bind(e.riverId, e.number, e.channelId, e.intentId, e.repo, e.path, e.agent, e.model ?? null, Date.now())
+    .run();
+}
+
+export async function logbookFor(db: D1Database, riverId: string, channelId: string): Promise<{ number: string; path: string; repo: string } | null> {
+  return db
+    .prepare("SELECT number, path, repo FROM logbook_index WHERE river_id = ? AND channel_id = ?")
+    .bind(riverId, channelId)
+    .first<{ number: string; path: string; repo: string }>();
+}

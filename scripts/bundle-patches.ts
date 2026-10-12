@@ -29,7 +29,7 @@ const resolutions: Record<string, unknown> = {};
 
 const dirs = (p: string) => (existsSync(p) ? readdirSync(p).filter((n) => statSync(join(p, n)).isDirectory()) : []);
 
-for (const intent of dirs(src)) {
+for (const intent of dirs(src).filter((d) => !d.startsWith("_"))) {
   for (const strategy of dirs(join(src, intent))) {
     const dir = join(src, intent, strategy);
     const metaPath = join(dir, "meta.json");
@@ -52,16 +52,30 @@ for (const intent of dirs(src)) {
       commits: patchFiles.map((file) => ({ file, patch: readFileSync(join(dir, file), "utf8"), delaySec: delays.get(file) ?? null })),
     };
   }
-  // Optional merge resolutions for Confluence, e.g. refactor-gauge/RESOLUTION.md + resolution-*.patch
-  const resDir = join(src, intent);
-  for (const file of readdirSync(resDir).filter((n) => /^resolution.*\.patch$/i.test(n))) {
-    resolutions[`${intent}/${file}`] = {
-      intent,
-      file,
-      patch: readFileSync(join(resDir, file), "utf8"),
-      notes: existsSync(join(resDir, "RESOLUTION.md")) ? readFileSync(join(resDir, "RESOLUTION.md"), "utf8") : "",
-    };
-  }
+}
+
+// Recorded merge resolutions: _resolutions/<intentA>.<strategyA>+<intentB>.<strategyB>/{meta.json, files/**}
+function walk(dir: string, prefix = ""): string[] {
+  return readdirSync(dir).flatMap((n) => {
+    const p = join(dir, n);
+    return statSync(p).isDirectory() ? walk(p, `${prefix}${n}/`) : [`${prefix}${n}`];
+  });
+}
+const resRoot = join(src, "_resolutions");
+for (const pair of dirs(resRoot)) {
+  const dir = join(resRoot, pair);
+  if (!existsSync(join(dir, "meta.json")) || !existsSync(join(dir, "files"))) continue;
+  const meta = JSON.parse(readFileSync(join(dir, "meta.json"), "utf8")) as Record<string, unknown>;
+  const files: Record<string, string> = {};
+  for (const rel of walk(join(dir, "files"))) files[rel] = readFileSync(join(dir, "files", rel), "utf8");
+  resolutions[pair] = {
+    pair: (meta.pair as string[]) ?? pair.split("+"),
+    conflicted: (meta.conflicted as string[]) ?? Object.keys(files),
+    agent: String(meta.agent ?? "claude-code"),
+    model: String(meta.model ?? ""),
+    notes: String(meta.notes ?? ""),
+    files,
+  };
 }
 
 mkdirSync(dirname(out), { recursive: true });

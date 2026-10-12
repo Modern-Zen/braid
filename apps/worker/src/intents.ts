@@ -10,6 +10,7 @@ import {
   channelRepoName,
   isSlug,
   logbookNumber,
+  logbookPath,
   mainRepoName,
   shortSha,
   slugify,
@@ -29,6 +30,7 @@ import {
   getRiver,
   insertChannel,
   insertIntent,
+  insertLogbookIndex,
   insertRiver,
   listChannels,
   listIntents,
@@ -234,6 +236,17 @@ export async function openIntent(
         detail: `${p.id} · ${fork.name}`,
       });
       await river$.updateChannel(intentId, p.id, { status: "cloning", statusText: "cloning", progress: 0.06 });
+      const number = logbookNumber(await reserveLogbookNumber(env.DB, riverId));
+      await insertLogbookIndex(env.DB, {
+        riverId,
+        number,
+        channelId: p.id,
+        intentId,
+        repo: fork.name,
+        path: logbookPath(number, p.id),
+        agent: p.agent,
+        model: p.model,
+      });
       const agent = await getAgentByName(env.ChannelAgent, `${riverId}:${p.id}`);
       await agent.start({
         riverId,
@@ -247,7 +260,7 @@ export async function openIntent(
         mainRepo: river.mainRepo,
         strategy: p.strategy,
         mode,
-        logbookNumber: logbookNumber(await reserveLogbookNumber(env.DB, riverId)),
+        logbookNumber: number,
       });
       return channel;
     }),

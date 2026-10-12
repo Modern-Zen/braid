@@ -1,10 +1,21 @@
 // /api/rivers/* (humans, behind Access) and /api/admin/rivers/* (operators).
 import { Hono } from "hono";
 import { getAgentByName } from "agents";
-import { channelRepoName, mainRepoName, parseRepoName, type OpenIntentRequest, type RiverSummary } from "@braid/protocol";
+import {
+  channelRepoName,
+  mainRepoName,
+  parseRepoName,
+  parseTrailers,
+  type EddyDecision,
+  type OpenIntentRequest,
+  type RiverSummary,
+} from "@braid/protocol";
 import { deleteRepoIfExists, mintToken, repoInfo } from "../artifacts.ts";
 import type { HwEnv } from "../auth.ts";
-import { deleteRiverWork, listChannels, listRivers } from "../db.ts";
+import { commitView } from "../commits.ts";
+import { deleteRiverWork, getChannel, listChannels, listRivers } from "../db.ts";
+import { decide, eddyView } from "../eddy.ts";
+import { scoutView } from "../scout.ts";
 import { createRiver, HttpError, openIntent, refreshHead, riverSummary, type CreateRiverRequest } from "../intents.ts";
 
 export const rivers = new Hono<HwEnv>();
@@ -40,6 +51,55 @@ rivers.post("/:id/intents", async (c) => {
   const body = await c.req.json<OpenIntentRequest>();
   const result = await openIntent(c.env, c.req.param("id"), body);
   return c.json(result, 201);
+});
+
+rivers.get("/:id/intents/:intent/scout", async (c) => {
+  const view = await scoutView(c.env, c.req.param("id"), c.req.param("intent"));
+  return view ? c.json(view) : c.json({ error: "not found" }, 404);
+});
+
+rivers.get("/:id/eddy", async (c) => c.json(await eddyView(c.env, c.req.param("id"))));
+
+rivers.post("/:id/eddy/:card", async (c) => {
+  const { action } = await c.req.json<EddyDecision>();
+  const principal = c.get("principal");
+  const by = principal.kind === "human" ? principal.email : "operator";
+  return c.json(await decide(c.env, c.req.param("id"), decodeURIComponent(c.req.param("card")), action, by));
+});
+
+/** GET /api/rivers/:id/commits/:sha?repo=<repo> — the Logbook / commit view. */
+rivers.get("/:id/commits/:sha", async (c) => {
+  const riverId = c.req.param("id");
+  const repo = c.req.query("repo") ?? mainRepoName(riverId);
+  const view = await commitView(c.env, riverId, repo, c.req.param("sha"));
+  return view ? c.json(view) : c.json({ error: "not found" }, 404);
+});
+
+/** Recent commits on a repo (main by default), newest first, for the Logbook screen. */
+rivers.get("/:id/commits", async (c) => {
+  const riverId = c.req.param("id");
+  const repo = c.req.query("repo") ?? mainRepoName(riverId);
+  if (parseRepoName(repo).kind === "other") return c.json({ error: "not a River repo" }, 400);
+  using r = await c.env.ARTIFACTS.get(repo);
+  const log = await r.log({ ref: "main", limit: Number(c.req.query("limit") ?? 30) });
+  return c.json({
+    repo,
+    commits: log.map((m) => ({ sha: m.hash, subject: m.message.split("\n")[0], trailers: parseTrailers(m.message), committedAt: m.committedAt })),
+  });
+});
+
+rivers.get("/:id/screenshots/:channel", async (c) => {
+  const ch = await getChannel(c.env.DB, c.req.param("id"), c.req.param("channel"));
+  if (!ch?.screenshotKey) return c.json({ error: "not found" }, 404);
+  const obj = await c.env.BLOBS.get(ch.screenshotKey);
+  if (!obj) return c.json({ error: "not found" }, 404);
+  return new Response(obj.body, { headers: { "content-type": obj.httpMetadata?.contentType ?? "image/png", "cache-control": "private, max-age=60" } });
+});
+
+rivers.get("/:id/transcripts/:channel", async (c) => {
+  const obj = await c.env.BLOBS.get(`transcripts/${c.req.param("id")}/${c.req.param("channel")}.jsonl`);
+  if (!obj) return c.json({ error: "not found" }, 404);
+  return new Response(obj.body, { headers: { "content-type": "application/x-ndjson; charset=utf-8" } });
 });
 
 // ── Operators ─────────────────────────────────────────────────────────────────
