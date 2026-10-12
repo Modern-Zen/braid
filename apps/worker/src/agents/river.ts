@@ -61,7 +61,17 @@ export class RiverAgent extends Agent<Env, RiverState> {
     this.sql`CREATE TABLE IF NOT EXISTS merges (
       intent_id TEXT PRIMARY KEY, channel_id TEXT NOT NULL, by TEXT NOT NULL, state TEXT NOT NULL,
       attempt INTEGER NOT NULL, workflow_id TEXT, enqueued_at INTEGER NOT NULL)`;
-    if (this.state.riverId !== this.name) this.setState({ ...this.state, riverId: this.name });
+    // State saved by an older version may lack newer fields: fill them from the defaults.
+    const saved = this.state as Partial<RiverState>;
+    const missing = (Object.keys(this.initialState) as Array<keyof RiverState>).some((k) => saved[k] === undefined);
+    if (missing || saved.riverId !== this.name) {
+      this.setState({
+        ...this.initialState,
+        ...saved,
+        counters: { ...this.initialState.counters, ...saved.counters },
+        riverId: this.name,
+      });
+    }
   }
 
   // ── River ─────────────────────────────────────────────────────────────────

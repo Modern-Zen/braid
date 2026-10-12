@@ -13,7 +13,7 @@ import {
 import { deleteRepoIfExists, mintToken, repoInfo } from "../artifacts.ts";
 import type { HwEnv } from "../auth.ts";
 import { commitView } from "../commits.ts";
-import { deleteRiverWork, getChannel, listChannels, listRivers } from "../db.ts";
+import { deleteRiverWork, getChannel, getIntent, listChannels, listRivers, setIntentStatus } from "../db.ts";
 import { decide, eddyView } from "../eddy.ts";
 import { issueAgentToken } from "../mcp.ts";
 import { deployMain } from "../preview.ts";
@@ -59,6 +59,30 @@ rivers.post("/:id/intents", async (c) => {
 rivers.get("/:id/intents/:intent/scout", async (c) => {
   const view = await scoutView(c.env, c.req.param("id"), c.req.param("intent"));
   return view ? c.json(view) : c.json({ error: "not found" }, 404);
+});
+
+/**
+ * Scout's "Pick ch-N": decides the open pick card for the Intent if there is one,
+ * otherwise sends the Channel to Confluence as a human pick.
+ */
+rivers.post("/:id/intents/:intent/pick", async (c) => {
+  const riverId = c.req.param("id");
+  const intentId = c.req.param("intent");
+  const { channelId } = await c.req.json<{ channelId: string }>();
+  const ch = await getChannel(c.env.DB, riverId, channelId);
+  if (!ch || ch.intentId !== intentId) throw new HttpError(400, `${channelId} is not a Channel of ${intentId}`);
+  const principal = c.get("principal");
+  const by = principal.kind === "human" ? principal.email : "operator";
+  const card = await c.env.DB.prepare("SELECT id FROM eddy_cards WHERE river_id = ? AND intent_id = ? AND kind = 'pick' AND decided_at IS NULL")
+    .bind(riverId, intentId)
+    .first<{ id: string }>();
+  if (card) return c.json(await decide(c.env, riverId, card.id, `pick:${channelId}`, by));
+  const intent = await getIntent(c.env.DB, riverId, intentId);
+  if (!intent || !["scouting", "eddy"].includes(intent.status)) throw new HttpError(409, `Intent is ${intent?.status ?? "missing"}; nothing to pick`);
+  await setIntentStatus(c.env.DB, riverId, intentId, "confluence");
+  const river = await getAgentByName(c.env.RiverAgent, riverId);
+  await river.setIntentStatus(intentId, "confluence");
+  return c.json({ ok: true, queued: await river.enqueueMerge({ intentId, channelId, by: "you" }) });
 });
 
 /** Replay from commit: fork a Channel at a commit into a new live Channel. */
