@@ -82,8 +82,11 @@ function mustGit(cwd: string, ...argv: string[]): string {
   return res.stdout.trim();
 }
 
-/** Copy the tracked files of apps/demo-riverlevels into `dir` and commit them as the seed. */
-function createBase(dir: string): string {
+/**
+ * Copy the tracked files of apps/demo-riverlevels into `dir` (an empty folder),
+ * commit them as the seed, and return the commit sha. Same files, same sha.
+ */
+export function createBase(dir: string): string {
   const listed = mustGit(ROOT, "ls-files", "-z", "--", APP).split("\0").filter(Boolean);
   if (listed.length === 0) throw new Error(`${APP} has no tracked files`);
   for (const path of listed) {
@@ -303,4 +306,5 @@ function listFiles(dir: string, prefix = ""): string[] {
   return out.sort();
 }
 
-main();
+// Run only as a script, so other scripts can import createBase and BASE_COMMIT.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();
