@@ -1,0 +1,141 @@
+/* Light theme. Keep these values in sync with tokens.ts. */
+:root {
+  --rl-bg: #f5f5f4;
+  --rl-surface: #ffffff;
+  --rl-ink: #1c1917;
+  --rl-muted: #78716c;
+  --rl-line: #e7e5e4;
+  --rl-font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --rl-font-display: "Lora", Georgia, "Times New Roman", serif;
+  --rl-radius: 10px;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--rl-bg);
+  color: var(--rl-ink);
+  font-family: var(--rl-font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+}
+
+.app-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-family: var(--rl-font-display);
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: -0.01em;
+}
+
+.app-subtitle,
+.app-loading {
+  margin: 0;
+  color: var(--rl-muted);
+}
+
+.app-error {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--rl-line);
+  border-radius: var(--rl-radius);
+  background: var(--rl-surface);
+}
+
+.river-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.river-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 22px;
+  border: 1px solid var(--rl-line);
+  border-radius: var(--rl-radius);
+  background: var(--rl-surface);
+}
+
+.river-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.river-card-header h2 {
+  margin: 0;
+  font-family: var(--rl-font-display);
+  font-weight: 500;
+  font-size: 18px;
+}
+
+.river-site,
+.river-updated {
+  font-size: 12px;
+  color: var(--rl-muted);
+}
+
+.river-gauges {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gauge {
+  display: grid;
+  grid-template-columns: 56px 1fr 92px;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.gauge-track {
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.gauge-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 400ms ease;
+}
+
+.gauge-value {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gauge-bar {
+    transition: none;
+  }
+}
