@@ -7,7 +7,7 @@
 //   /health      liveness
 import { Hono } from "hono";
 import { getAgentByName } from "agents";
-import { requireAdmin, requireHuman, type HwEnv } from "./auth.ts";
+import { endSession, requireAdmin, requireHuman, startSession, whoami, type HwEnv } from "./auth.ts";
 import { handleArtifactsQueue } from "./events.ts";
 import { prepareSmoke, runSmoke, verifySmoke } from "./smoke.ts";
 import { adminRivers, httpErrorStatus, rivers } from "./routes/rivers.ts";
@@ -74,6 +74,9 @@ admin.route("/rivers", adminRivers);
 // ── Human API ─────────────────────────────────────────────────────────────────
 const api = new Hono<App>();
 api.route("/admin", admin);
+api.post("/session", (c) => startSession(c));
+api.delete("/session", (c) => endSession(c));
+api.get("/session", requireHuman, whoami);
 api.use("/rivers", requireHuman);
 api.use("/rivers/*", requireHuman);
 api.route("/rivers", rivers);

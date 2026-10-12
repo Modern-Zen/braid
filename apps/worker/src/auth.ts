@@ -57,8 +57,38 @@ export const requireHuman: MiddlewareHandler<HwEnv> = async (c, next) => {
       return next();
     }
   }
+  // Operator session (before Access is set up): cookie set by POST /api/session.
+  const cookie = /(?:^|;\s*)hw_session=([0-9a-f]{64})/.exec(c.req.header("cookie") ?? "")?.[1];
+  if (cookie && c.env.ADMIN_TOKEN && timingSafeEqual(cookie, await sessionValue(c.env.ADMIN_TOKEN))) {
+    c.set("principal", { kind: "human", email: "operator" });
+    return next();
+  }
   return c.json({ error: "unauthorized" }, 401);
 };
+
+/** The operator session cookie value: HMAC of a fixed label under ADMIN_TOKEN (rotates with it). */
+export async function sessionValue(adminToken: string): Promise<string> {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(adminToken), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode("hw-session-v1"));
+  return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** POST /api/session {token}: exchange the operator token for an HttpOnly session cookie. */
+export async function startSession(c: Context<HwEnv>): Promise<Response> {
+  const body = await c.req.json<{ token?: string }>().catch(() => ({ token: undefined }));
+  if (!body.token || !c.env.ADMIN_TOKEN || !timingSafeEqual(body.token, c.env.ADMIN_TOKEN)) return c.json({ error: "unauthorized" }, 401);
+  const secure = new URL(c.req.url).protocol === "https:" ? "; Secure" : "";
+  c.header("set-cookie", `hw_session=${await sessionValue(c.env.ADMIN_TOKEN)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800${secure}`);
+  return c.json({ ok: true });
+}
+
+export function endSession(c: Context<HwEnv>): Response {
+  c.header("set-cookie", "hw_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0");
+  return c.json({ ok: true });
+}
+
+/** GET /api/session: who am I (the UI uses it to decide whether to ask for a token). */
+export const whoami: MiddlewareHandler<HwEnv> = async (c) => c.json({ principal: c.get("principal") });
 
 interface AccessClaims {
   aud: string | string[];
