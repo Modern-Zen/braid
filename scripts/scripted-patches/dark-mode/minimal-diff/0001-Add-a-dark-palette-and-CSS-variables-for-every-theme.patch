@@ -1,0 +1,100 @@
+From c3115d7c3017726fbb20ffdc4351db06341873c1 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:17:32 -0700
+Subject: [PATCH 1/3] Add a dark palette and CSS variables for every theme
+ token
+
+tokens.ts gains a dark palette and `tokens`, a var(--rl-*) reference for each entry. theme.css defines the bar and alert colors as custom properties too, and switches every variable to the dark set under prefers-color-scheme: dark.
+---
+ src/theme/theme.css | 19 +++++++++++++++++--
+ src/theme/tokens.ts | 33 +++++++++++++++++++++++++++++----
+ 2 files changed, 46 insertions(+), 6 deletions(-)
+
+diff --git a/src/theme/theme.css b/src/theme/theme.css
+index 355a9aa..8a6271c 100644
+--- a/src/theme/theme.css
++++ b/src/theme/theme.css
+@@ -1,14 +1,29 @@
+-/* Light theme. Keep these values in sync with tokens.ts. */
++/* Light theme by default, dark when the system prefers it.
++   Keep these values in sync with `light` and `dark` in tokens.ts. */
+ :root {
+   --rl-bg: #f5f5f4;
+   --rl-surface: #ffffff;
+   --rl-ink: #1c1917;
+   --rl-muted: #78716c;
+   --rl-line: #e7e5e4;
++  --rl-bar: #0d9488;
++  --rl-alert: #c2410c;
+   --rl-font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+   --rl-font-display: "Lora", Georgia, "Times New Roman", serif;
+   --rl-radius: 10px;
+-  color-scheme: light;
++  color-scheme: light dark;
++}
++
++@media (prefers-color-scheme: dark) {
++  :root {
++    --rl-bg: #0c0a09;
++    --rl-surface: #1c1917;
++    --rl-ink: #fafaf9;
++    --rl-muted: #a8a29e;
++    --rl-line: #292524;
++    --rl-bar: #2dd4bf;
++    --rl-alert: #fb923c;
++  }
+ }
+ 
+ * {
+diff --git a/src/theme/tokens.ts b/src/theme/tokens.ts
+index b374b0e..993186c 100644
+--- a/src/theme/tokens.ts
++++ b/src/theme/tokens.ts
+@@ -1,6 +1,7 @@
+-// The light palette. theme.css mirrors these values as CSS custom properties for
+-// the page chrome; the Gauge reads them here because its bar color depends on the
+-// reading (alert or not) and its track is a tint of that color, both set inline.
++// Theme tokens. `light` and `dark` hold the raw colors; theme.css mirrors them as
++// CSS custom properties and switches to the dark set when the system asks for it
++// (prefers-color-scheme). Components use `tokens`, which point at those custom
++// properties, so they follow the active theme without knowing which one it is.
+ 
+ export interface Palette {
+   bg: string;
+@@ -12,7 +13,7 @@ export interface Palette {
+   alert: string;
+ }
+ 
+-export const palette: Palette = {
++export const light: Palette = {
+   bg: "#f5f5f4",
+   surface: "#ffffff",
+   ink: "#1c1917",
+@@ -21,3 +22,27 @@ export const palette: Palette = {
+   bar: "#0d9488",
+   alert: "#c2410c",
+ };
++
++export const dark: Palette = {
++  bg: "#0c0a09",
++  surface: "#1c1917",
++  ink: "#fafaf9",
++  muted: "#a8a29e",
++  line: "#292524",
++  bar: "#2dd4bf",
++  alert: "#fb923c",
++};
++
++/** `var(--rl-<name>)` for every palette entry. */
++export const tokens: Palette = {
++  bg: "var(--rl-bg)",
++  surface: "var(--rl-surface)",
++  ink: "var(--rl-ink)",
++  muted: "var(--rl-muted)",
++  line: "var(--rl-line)",
++  bar: "var(--rl-bar)",
++  alert: "var(--rl-alert)",
++};
++
++/** The light palette, under its old name for existing imports. */
++export const palette = light;

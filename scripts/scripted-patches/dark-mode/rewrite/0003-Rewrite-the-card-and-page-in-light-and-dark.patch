@@ -1,0 +1,290 @@
+From ec068d787ef9d958d39811138d956d1e0f0f18e4 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:26:01 -0700
+Subject: [PATCH 3/4] Rewrite the card and page in light and dark
+
+RiverCard and App carry their own light and dark colors, like the gauge,
+and pass the system scheme down. The page paints the body and sets
+color-scheme so overscroll and native controls match. theme.css keeps
+only layout and type; its color variables are gone.
+---
+ src/App.tsx                  | 64 ++++++++++++++++++++++++------------
+ src/components/RiverCard.tsx | 38 ++++++++++++++++-----
+ src/theme/theme.css          | 44 ++++++++++++-------------
+ 3 files changed, 95 insertions(+), 51 deletions(-)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index fcae32a..b7c9366 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,18 +1,28 @@
+ import { useEffect, useState } from "react";
+ import { RiverCard } from "./components/RiverCard";
++import { useColorScheme, type ColorScheme } from "./theme/useColorScheme";
+ import type { LevelsResponse, River } from "./types";
+ 
+ /** The dashboard refreshes every 30 s: one request per open tab, well under any limit. */
+ export const REFRESH_MS = 30_000;
+ 
++const PAGE_COLORS = {
++  light: { background: "#f5f5f4", text: "#1c1917", muted: "#78716c", panel: "#ffffff", border: "#e7e5e4" },
++  dark: { background: "#0c0a09", text: "#fafaf9", muted: "#a8a29e", panel: "#1c1917", border: "#292524" },
++} as const;
++
+ export interface AppProps {
+   /** Rendered immediately; the dashboard still refreshes from /api/levels. */
+   initialRivers?: River[];
++  /** Scheme for the server render and the first frame; the system setting takes over in the browser. */
++  initialScheme?: ColorScheme;
+ }
+ 
+-export function App({ initialRivers }: AppProps) {
++export function App({ initialRivers, initialScheme = "light" }: AppProps) {
+   const [rivers, setRivers] = useState<River[] | null>(initialRivers ?? null);
+   const [error, setError] = useState<string | null>(null);
++  const scheme = useColorScheme(initialScheme);
++  const colors = PAGE_COLORS[scheme];
+ 
+   useEffect(() => {
+     let alive = true;
+@@ -36,26 +46,38 @@ export function App({ initialRivers }: AppProps) {
+     };
+   }, []);
+ 
++  // Paint the whole viewport, including overscroll, and native controls.
++  useEffect(() => {
++    document.body.style.background = colors.background;
++    document.documentElement.style.colorScheme = scheme;
++  }, [scheme, colors.background]);
++
+   return (
+-    <main className="app">
+-      <header className="app-header">
+-        <h1>River levels</h1>
+-        <p className="app-subtitle">Stage, flow and water temperature</p>
+-      </header>
+-      {error && (
+-        <p className="app-error" role="alert">
+-          {`Couldn’t refresh the gauges: ${error}`}
+-        </p>
+-      )}
+-      {rivers === null ? (
+-        <p className="app-loading">Loading gauges…</p>
+-      ) : (
+-        <section className="river-grid" aria-label="Rivers">
+-          {rivers.map((river) => (
+-            <RiverCard key={river.id} river={river} />
+-          ))}
+-        </section>
+-      )}
+-    </main>
++    <div className="page" data-scheme={scheme} style={{ background: colors.background, color: colors.text }}>
++      <main className="app">
++        <header className="app-header">
++          <h1>River levels</h1>
++          <p className="app-subtitle" style={{ color: colors.muted }}>
++            Stage, flow and water temperature
++          </p>
++        </header>
++        {error && (
++          <p className="app-error" role="alert" style={{ background: colors.panel, borderColor: colors.border }}>
++            {`Couldn’t refresh the gauges: ${error}`}
++          </p>
++        )}
++        {rivers === null ? (
++          <p className="app-loading" style={{ color: colors.muted }}>
++            Loading gauges…
++          </p>
++        ) : (
++          <section className="river-grid" aria-label="Rivers">
++            {rivers.map((river) => (
++              <RiverCard key={river.id} river={river} scheme={scheme} />
++            ))}
++          </section>
++        )}
++      </main>
++    </div>
+   );
+ }
+diff --git a/src/components/RiverCard.tsx b/src/components/RiverCard.tsx
+index eb0640b..b7e8f08 100644
+--- a/src/components/RiverCard.tsx
++++ b/src/components/RiverCard.tsx
+@@ -1,26 +1,48 @@
++import type { ColorScheme } from "../theme/useColorScheme";
+ import type { River } from "../types";
+ import { Gauge } from "./Gauge";
+ 
++const CARD_COLORS = {
++  light: { background: "#ffffff", border: "#e7e5e4", title: "#1c1917", meta: "#78716c" },
++  dark: { background: "#1c1917", border: "#292524", title: "#fafaf9", meta: "#a8a29e" },
++} as const;
++
+ /** "2026-10-12T14:00:00Z" → "14:00 UTC". UTC on purpose: gauges report in UTC. */
+ function formatUpdated(iso: string): string {
+   const date = new Date(iso);
+   return Number.isNaN(date.getTime()) ? "unknown" : `${date.toISOString().slice(11, 16)} UTC`;
+ }
+ 
+-export function RiverCard({ river }: { river: River }) {
++export interface RiverCardProps {
++  river: River;
++  scheme?: ColorScheme;
++}
++
++export function RiverCard({ river, scheme = "light" }: RiverCardProps) {
+   const headingId = `river-${river.id}`;
++  const colors = CARD_COLORS[scheme];
+   return (
+-    <article className="river-card" aria-labelledby={headingId}>
++    <article
++      className="river-card"
++      aria-labelledby={headingId}
++      style={{ background: colors.background, borderColor: colors.border }}
++    >
+       <header className="river-card-header">
+-        <h2 id={headingId}>{river.name}</h2>
+-        <span className="river-site">{river.site}</span>
++        <h2 id={headingId} style={{ color: colors.title }}>
++          {river.name}
++        </h2>
++        <span className="river-site" style={{ color: colors.meta }}>
++          {river.site}
++        </span>
+       </header>
+       <div className="river-gauges">
+-        <Gauge kind="stage" label="Stage" {...river.stage} />
+-        <Gauge kind="flow" label="Flow" {...river.flow} />
+-        <Gauge kind="temp" label="Temp" {...river.temp} />
++        <Gauge kind="stage" label="Stage" scheme={scheme} {...river.stage} />
++        <Gauge kind="flow" label="Flow" scheme={scheme} {...river.flow} />
++        <Gauge kind="temp" label="Temp" scheme={scheme} {...river.temp} />
+       </div>
+-      <footer className="river-updated">{`Updated ${formatUpdated(river.updatedAt)}`}</footer>
++      <footer className="river-updated" style={{ color: colors.meta }}>
++        {`Updated ${formatUpdated(river.updatedAt)}`}
++      </footer>
+     </article>
+   );
+ }
+diff --git a/src/theme/theme.css b/src/theme/theme.css
+index 355a9aa..e664683 100644
+--- a/src/theme/theme.css
++++ b/src/theme/theme.css
+@@ -1,14 +1,9 @@
+-/* Light theme. Keep these values in sync with tokens.ts. */
++/* Layout and type only. Colors live in the components (light and dark sets),
++   so this file is the same in both schemes. */
+ :root {
+-  --rl-bg: #f5f5f4;
+-  --rl-surface: #ffffff;
+-  --rl-ink: #1c1917;
+-  --rl-muted: #78716c;
+-  --rl-line: #e7e5e4;
+   --rl-font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+   --rl-font-display: "Lora", Georgia, "Times New Roman", serif;
+   --rl-radius: 10px;
+-  color-scheme: light;
+ }
+ 
+ * {
+@@ -17,14 +12,17 @@
+ 
+ body {
+   margin: 0;
+-  background: var(--rl-bg);
+-  color: var(--rl-ink);
+   font-family: var(--rl-font);
+   font-size: 14px;
+   line-height: 1.5;
+   -webkit-font-smoothing: antialiased;
+ }
+ 
++.page {
++  min-height: 100vh;
++  transition: background-color 200ms ease, color 200ms ease;
++}
++
+ .app {
+   max-width: 1080px;
+   margin: 0 auto;
+@@ -51,15 +49,13 @@ body {
+ .app-subtitle,
+ .app-loading {
+   margin: 0;
+-  color: var(--rl-muted);
+ }
+ 
+ .app-error {
+   margin: 0 0 16px;
+   padding: 10px 14px;
+-  border: 1px solid var(--rl-line);
++  border: 1px solid;
+   border-radius: var(--rl-radius);
+-  background: var(--rl-surface);
+ }
+ 
+ .river-grid {
+@@ -71,11 +67,10 @@ body {
+ .river-card {
+   display: flex;
+   flex-direction: column;
+-  gap: 16px;
++  gap: 18px;
+   padding: 20px 22px;
+-  border: 1px solid var(--rl-line);
++  border: 1px solid;
+   border-radius: var(--rl-radius);
+-  background: var(--rl-surface);
+ }
+ 
+ .river-card-header {
+@@ -95,23 +90,27 @@ body {
+ .river-site,
+ .river-updated {
+   font-size: 12px;
+-  color: var(--rl-muted);
+ }
+ 
+ .river-gauges {
+   display: flex;
+   flex-direction: column;
+-  gap: 10px;
++  gap: 14px;
+ }
+ 
+ .gauge {
+-  display: grid;
+-  grid-template-columns: 56px 1fr 92px;
+-  align-items: center;
+-  gap: 12px;
++  display: flex;
++  flex-direction: column;
++  gap: 6px;
+   font-size: 13px;
+ }
+ 
++.gauge-head {
++  display: flex;
++  align-items: baseline;
++  justify-content: space-between;
++}
++
+ .gauge-track {
+   height: 8px;
+   border-radius: 4px;
+@@ -129,12 +128,13 @@ body {
+   border: 0;
+   background: none;
+   font: inherit;
+-  text-align: right;
++  font-size: 15px;
+   font-variant-numeric: tabular-nums;
+   cursor: pointer;
+ }
+ 
+ @media (prefers-reduced-motion: reduce) {
++  .page,
+   .gauge-bar {
+     transition: none;
+   }
