@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="headwaters-tokens.css">
+  <style>
+    body { margin: 0; background: #fafaf9; }
+    a { color: var(--hw-color-channel); text-decoration: none; }
+    a:hover { color: var(--hw-color-channel-hover); }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+<div data-hw-theme="{{ theme }}" data-screen-label="Specs" style="min-height:100vh; background:var(--hw-color-paper); color:var(--hw-color-ink); font-family:var(--hw-font-ui); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;">
+  <div style="max-width:1040px; margin:0 auto; padding:64px 24px 96px; display:flex; flex-direction:column; gap:72px;">
+
+    <header style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div style="font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--hw-color-channel);">Headwaters · Design spec</div>
+        <button onClick="{{ toggleTheme }}" style="font-size:11px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; padding:9px 14px; border-radius:var(--hw-radius-md); border:1px solid var(--hw-color-line-strong); background:transparent; color:var(--hw-color-ink-2); cursor:pointer; white-space:nowrap;">Toggle theme</button>
+      </div>
+      <h1 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:clamp(36px, 5vw, 56px); line-height:1.05; letter-spacing:-0.02em;">Tokens, components, and the braid.</h1>
+      <p style="margin:0; max-width:640px; color:var(--hw-color-ink-2); text-wrap:pretty;">What an engineer needs to port the landing page and the four app screens 1:1 into React. Tokens live in <a href="headwaters-tokens.css" style="font-family:var(--hw-font-mono); font-size:13px;">headwaters-tokens.css</a>; set <span style="font-family:var(--hw-font-mono); font-size:13px;">data-hw-theme="dark"</span> on any ancestor to switch modes. Samples below are built from the real tokens, so they re-theme with the toggle.</p>
+      <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:13px;">
+        <a href="Headwaters Landing.dc.html">Landing page →</a>
+        <a href="Headwaters App.dc.html">App screens →</a>
+      </div>
+    </header>
+
+    <section style="display:flex; flex-direction:column; gap:24px;">
+      <div style="font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--hw-color-channel);">01 / Tokens</div>
+      <h2 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:30px; letter-spacing:-0.015em;">Color</h2>
+      <p style="margin:0; max-width:640px; color:var(--hw-color-ink-2); text-wrap:pretty;">Grounded in Modern Zen: stone neutrals, teal accent, Lora and Inter. Amber is the only warm color and means exactly one thing: a person has a decision to make. Never use it for warnings, highlights, or brand.</p>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:12px;">
+        <sc-for list="{{ colors }}" as="c" hint-placeholder-count="12">
+          <div style="border:1px solid var(--hw-color-line); border-radius:var(--hw-radius-md); overflow:hidden; background:var(--hw-color-surface);">
+            <div style="height:56px; background:{{ c.val }};"></div>
+            <div style="padding:10px 12px; display:flex; flex-direction:column; gap:2px;">
+              <div style="font-family:var(--hw-font-mono); font-size:11.5px;">{{ c.name }}</div>
+              <div style="font-size:12px; color:var(--hw-color-ink-3);">{{ c.use }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <h2 style="margin:24px 0 0; font-family:var(--hw-font-display); font-weight:500; font-size:30px; letter-spacing:-0.015em;">Type, space, radius, motion</h2>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+        <div style="border:1px solid var(--hw-color-line); border-radius:var(--hw-radius-lg); padding:20px 22px; background:var(--hw-color-surface); display:flex; flex-direction:column; gap:12px;">
+          <div style="font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--hw-color-ink-3);">Type</div>
+          <div style="font-family:var(--hw-font-display); font-size:32px; line-height:1.05; letter-spacing:-0.02em;">Lora 500 · display</div>
+          <div style="font-size:15px; color:var(--hw-color-ink-2);">Inter 400 · body 15–16px / 1.6</div>
+          <div style="font-size:13px; font-weight:500;">Inter 500 · UI 13–14px / 1.5</div>
+          <div style="font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--hw-color-ink-3);">Inter 600 · label 11px / 0.18em</div>
+          <div style="font-family:var(--hw-font-mono); font-size:12.5px; color:var(--hw-color-ink-2);">mono 11–13px · hashes, branches, events</div>
+          <div style="font-size:12.5px; color:var(--hw-color-ink-3);">Scale 12 · 14 · 16 · 18 · 20 · 24 · 30 · 36 · 48 · 60 · 72 · 96. Weights 400 / 500 / 600 only.</div>
+        </div>
+        <div style="border:1px solid var(--hw-color-line); border-radius:var(--hw-radius-lg); padding:20px 22px; background:var(--hw-color-surface); display:flex; flex-direction:column; gap:12px;">
+          <div style="font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--hw-color-ink-3);">Space · radius · stroke</div>
+          <div style="font-size:13px; color:var(--hw-color-ink-2);">4px grid: <span style="font-family:var(--hw-font-mono);">--hw-space-1…32</span> = 4 8 12 16 20 24 32 40 48 64 80 96 128.</div>
+          <div style="font-size:13px; color:var(--hw-color-ink-2);">Radius: xs 4 · sm 6 · md 8 (buttons, inputs) · lg 12 (cards) · xl 16 · 2xl 24 · full (badges only).</div>
+          <div style="font-size:13px; color:var(--hw-color-ink-2);">Strokes: hair 1px (idle, diagrams) · channel 1.5px (active) · main 2.5px; merged mainline 3.5–4px.</div>
+          <div style="font-size:13px; color:var(--hw-color-ink-2);">Shadows xs–lg are soft and low-alpha. Prefer a stronger border to a heavier shadow.</div>
+        </div>
+        <div style="border:1px solid var(--hw-color-line); border-radius:var(--hw-radius-lg); padding:20px 22px; background:var(--hw-color-surface); display:flex; flex-direction:column; gap:12px;">
+          <div style="font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--hw-color-ink-3);">Motion</div>
+          <div style="font-size:13px; color:var(--hw-color-ink-2);">UI: fast 140 · base 220 · slow 360ms, <span style="font-family:var(--hw-font-mono);">ease-out cubic-bezier(.2,.6,.2,1)</span>. Color and border shifts only; no scale on hover.</div>
+          <div style="font-size:13px; color:var(--hw-color-ink-2);">River: draw 900 · fork 1200 · pulse 2400ms · drift 14s, <span style="font-family:var(--hw-font-mono);">ease-in-out cubic-bezier(.45,0,.55,1)</span>. Nothing bounces.</div>
+          <div style="font-size:13px; color:var(--hw-color-ink-2);"><span style="font-family:var(--hw-font-mono);">prefers-reduced-motion</span> sets every river duration to 0ms; agents render at rest.</div>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:flex; flex-direction:column; gap:24px;">
+      <div style="font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--hw-color-channel);">02 / Components</div>
+      <h2 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:30px; letter-spacing:-0.015em;">Fourteen parts, one vocabulary.</h2>
+      <div style="display:flex; flex-direction:column;">
+        <sc-for list="{{ components }}" as="k" hint-placeholder-count="14">
+          <div style="display:grid; grid-template-columns:minmax(260px, 1fr) minmax(0, 1.2fr); gap:32px; padding:32px 0; border-top:1px solid var(--hw-color-line); align-items:start;">
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <h3 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:22px; letter-spacing:-0.01em;">{{ k.name }}</h3>
+              <p style="margin:0; color:var(--hw-color-ink-2); font-size:14px; text-wrap:pretty;">{{ k.desc }}</p>
+              <div style="padding:20px; border:1px dashed var(--hw-color-line-strong); border-radius:var(--hw-radius-lg); background:var(--hw-color-paper); display:flex; align-items:center; justify-content:center; min-height:88px;">{{ k.sample }}</div>
+            </div>
+            <dl style="margin:0; display:grid; grid-template-columns:110px minmax(0,1fr); gap:8px 16px; font-size:13px;">
+              <sc-for list="{{ k.rows }}" as="r" hint-placeholder-count="5">
+                <dt style="color:var(--hw-color-ink-3); margin:0;">{{ r.k }}</dt>
+                <dd style="margin:0; color:var(--hw-color-ink); font-family:var(--hw-font-mono); font-size:12px; line-height:1.6;">{{ r.v }}</dd>
+              </sc-for>
+            </dl>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display:flex; flex-direction:column; gap:24px; border-top:1px solid var(--hw-color-line); padding-top:48px;">
+      <div style="font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--hw-color-channel);">03 / The braid</div>
+      <h2 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:30px; letter-spacing:-0.015em;">How channels split, run, and rejoin.</h2>
+      <div style="border:1px solid var(--hw-color-line); border-radius:var(--hw-radius-lg); padding:24px; background:var(--hw-color-surface);">{{ braidDemo }}</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:24px;">
+        <div style="display:flex; flex-direction:column; gap:10px; font-size:14px; color:var(--hw-color-ink-2);">
+          <h3 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:19px; color:var(--hw-color-ink);">Geometry</h3>
+          <p style="margin:0; text-wrap:pretty;">One SVG, viewBox 1200×360 (hero) or 1000×620 (channel map). Mainline at the vertical centre. A channel is a single path: fork curve → run → rejoin curve.</p>
+          <p style="margin:0; text-wrap:pretty;">Fork and rejoin are cubic Béziers whose control points sit on the horizontal, 110px either side of the bend (<span style="font-family:var(--hw-font-mono); font-size:12px;">C x1+110 cy, x2−110 y, x2 y</span>). Every tangent stays horizontal, so lines never kink.</p>
+          <p style="margin:0; text-wrap:pretty;">Channel spacing is 22px at n=9 and widens as n falls (<span style="font-family:var(--hw-font-mono); font-size:12px;">spread = 11(n−1)+8</span>). The run carries a ±9px S-drift so channels read as water, not rails.</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px; font-size:14px; color:var(--hw-color-ink-2);">
+          <h3 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:19px; color:var(--hw-color-ink);">Timing</h3>
+          <p style="margin:0; text-wrap:pretty;">Every path gets <span style="font-family:var(--hw-font-mono); font-size:12px;">pathLength=1; stroke-dasharray:1; stroke-dashoffset:1</span> and animates to 0 with <span style="font-family:var(--hw-font-mono); font-size:12px;">hw-draw</span>, 900ms ease-in-out.</p>
+          <p style="margin:0; text-wrap:pretty;">Sequence: mainline-in at 0s · channel i at 0.5s + 0.1s·i · agent dot fades in when its channel finishes · mainline-out after the last channel, drawn 1px bolder.</p>
+          <p style="margin:0; text-wrap:pretty;">Agents travel with SMIL <span style="font-family:var(--hw-font-mono); font-size:12px;">animateMotion</span> along the same path, 13s + 1.3s·i, spline (.45 0 .55 1), repeating. The halo breathes with <span style="font-family:var(--hw-font-mono); font-size:12px;">hw-pulse</span> 2.4s.</p>
+          <p style="margin:0; text-wrap:pretty;">The human moment: one channel runs <span style="font-family:var(--hw-font-mono); font-size:12px;">hw-human</span> (stroke) and its dot <span style="font-family:var(--hw-font-mono); font-size:12px;">hw-human-fill</span>, a 14s loop, amber between 46–62%, then back to teal. Nothing else on the page is amber at that moment.</p>
+        </div>
+      </div>
+      <div style="background:var(--hw-color-code-bg); color:var(--hw-color-code-fg); border-radius:var(--hw-radius-lg); padding:22px 26px; font-family:var(--hw-font-mono); font-size:12px; line-height:1.75; white-space:pre-wrap; word-break:break-word;">
+        <div style="font-family:var(--hw-font-ui); font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--hw-color-ink-4); margin-bottom:12px;">Channel path · React + SVG</div>
+        <sc-for list="{{ codeLines }}" as="l" hint-placeholder-count="13">
+          <div style="padding-left:{{ l.indent }};">{{ l.text }}</div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Appearance&quot;}}">
+const COLORS = [
+  ['--hw-color-paper', 'Page. stone-50 / stone-900'], ['--hw-color-surface', 'Cards, chips'], ['--hw-color-surface-2', 'Rails, wells, skeletons'],
+  ['--hw-color-ink', 'Headings, mainline'], ['--hw-color-ink-2', 'Body'], ['--hw-color-ink-3', 'Secondary, status'], ['--hw-color-ink-4', 'Captions, separators'],
+  ['--hw-color-line', 'Borders, idle channels'], ['--hw-color-line-strong', 'Outlined buttons'],
+  ['--hw-color-channel', 'Active channels, links, agents'], ['--hw-color-channel-soft', 'Chip fills'], ['--hw-color-channel-glow', 'Agent halo'],
+  ['--hw-color-human', 'Needs a human. Only warm color.'], ['--hw-color-human-soft', 'Tie banner wash'],
+  ['--hw-color-merged', 'Passed, merged'], ['--hw-color-conflict', 'Shoals, failed tests'], ['--hw-color-code-bg', 'Code panels, both modes'], ['--hw-color-code-accent', 'Code identifiers']
+];
+const row = (k, v) => ({ k, v });
+const CODE = [
+  [0, 'const d = `M${x1} ${cy} C${x1+110} ${cy} ${x2-110} ${y} ${x2} ${y}`'],
+  [6, '+ ` C${xm-130} ${y} ${xm-70} ${y+drift} ${xm} ${y+drift}`'],
+  [6, '+ ` C${xm+70} ${y+drift} ${xm+130} ${y} ${x3} ${y}`'],
+  [6, '+ ` C${x3+110} ${y} ${x4-110} ${cy} ${x4} ${cy}`;'],
+  [0, '<path d={d} pathLength={1} stroke="var(--hw-color-channel)" strokeWidth={1.5} fill="none"'],
+  [3, 'style={{ strokeDasharray: 1, strokeDashoffset: 1,'],
+  [6, 'animation: `hw-draw var(--hw-motion-draw) var(--hw-motion-ease-in-out) ${0.5 + i*0.1}s forwards` }} />'],
+  [0, '<g style={{ opacity: 0, animation: `hw-fade-in .6s ease ${0.5 + i*0.1 + 0.9}s forwards` }}>'],
+  [3, '<circle r={9} fill="var(--hw-color-channel-glow)" style={{ animation: "hw-pulse var(--hw-motion-pulse) infinite" }} />'],
+  [3, '<circle r={3.5} fill="var(--hw-color-channel)" />'],
+  [3, '<text x={12} y={-8}>ch-{i+1} · claude-code</text>'],
+  [3, '<animateMotion dur={`${13 + i*1.3}s`} repeatCount="indefinite" path={d} calcMode="spline" keyTimes="0;1" keySplines="0.45 0 0.55 1" />'],
+  [0, '</g>']
+].map(([indent, text]) => ({ indent: indent + 'em', text }));
+const COMPONENTS = [
+  { id: 'chip', name: 'Agent chip', desc: 'Names a channel and the agent working it. Lives at the head of a channel line and in Scout column headers.', rows: [row('Size', 'h 22 · pad 3×8 · radius 4'), row('Type', 'mono 11px ink; status mono 11px ink-3'), row('Dot', 'r 3.5 teal + r 9 halo (channel-glow), hw-pulse 2.4s'), row('States', 'active teal · merged ink-4 · conflict rose · human amber (dot only)'), row('Spacing', '8px dot→chip; status 4px below')] },
+  { id: 'channel', name: 'Channel line', desc: 'A single SVG path. Width and color carry state; the shape never changes.', rows: [row('Idle', 'line-strong, 1px'), row('Active', 'channel, 1.5px'), row('Pushed', 'channel, 2px for 1200ms, then back to 1.5'), row('Merged', 'ink-4, 1.5px, rejoins mainline'), row('Conflict', 'rose dashed 3 4 at the shoal only'), row('Draw', 'pathLength 1 · dasharray 1 · hw-draw 900ms')] },
+  { id: 'dot', name: 'Commit dot', desc: 'One per commit, placed along the channel where it landed. The open ring is HEAD.', rows: [row('Size', 'r 3 filled · HEAD r 5, paper fill, 1.5px stroke'), row('Color', 'inherits the channel stroke'), row('Enter', 'hw-fade-in 400ms as the line reaches it'), row('Hit area', '≥ 16px; tooltip shows hash + message')] },
+  { id: 'event', name: 'Event row', desc: 'The live feed. Event name in mono, colored by family; relative timestamps, never absolute.', rows: [row('Layout', 'grid 1fr auto · gap 2×12 · pad 10×20'), row('Type', 'mono 11.5px / 1.4'), row('Colors', 'repo.* teal · review.passed emerald · line.conflict rose · confluence by-you amber · meta ink-3'), row('Border', '1px line between rows'), row('Detail', 'single line, ellipsis')] },
+  { id: 'counter', name: 'Stat counter', desc: 'The calm counter. Small in the top bar, large on Eddy and the landing page. The last item is the only amber.', rows: [row('Top bar', 'Inter 13 ink-2, separators ink-4'), row('Eddy', 'Lora 500 40/1.15, tracking −0.02em'), row('Landing', 'Lora 500 clamp(48–80), tabular-nums'), row('Animate', 'count up 1600ms ease-out cubic on enter'), row('Zero', '“nothing for you”, ink-3, no amber')] },
+  { id: 'card', name: 'Decision card', desc: 'One question, the minimum context, one to three actions. The amber edge means a person is needed.', rows: [row('Size', 'max-w 760 · pad 24×28 · radius 12'), row('Edge', '3px amber bar, left'), row('Type', 'question Lora 22 · meta mono 11.5 ink-3 · context Inter 15/1.6 ink-2'), row('Actions', 'primary ink/paper · secondary outlined · tertiary text ink-3 · 8px gap'), row('Shadow', 'shadow-sm on surface')] },
+  { id: 'verdict', name: 'Verdict banner', desc: 'The judge\u2019s ranking and a two-sentence rationale. Border color is the state.', rows: [row('Size', 'pad 20×24 · radius 12 · grid 1fr auto'), row('Watching', 'border line, label ink-3'), row('Ready', 'border teal, label teal, rank chips mono 11.5'), row('Tie', 'border amber, bg human-soft, two amber buttons'), row('Rationale', 'Lora 17/1.45, max-w 760')] },
+  { id: 'gauge', name: 'Risk gauge', desc: 'A 180° arc. Low risk is teal, mid is grey, high is amber because it will need approval.', rows: [row('Size', '36×20 · 3px stroke · track line'), row('Thresholds', '< 0.40 teal · 0.40–0.59 ink-3 · ≥ 0.60 amber'), row('Value', 'mono 12.5 beside the arc'), row('Draw', 'dasharray v 1 with pathLength 1 · 600ms')] },
+  { id: 'preview', name: 'Preview card', desc: 'A live screenshot of the channel\u2019s deployment. Skeleton while building.', rows: [row('Ratio', '16:10, full column width'), row('Skeleton', 'surface-2 with line bars, hw-pulse staggered 300ms'), row('Frame', 'card: 1px line, radius 12, header 14×16'), row('Status row', '2×2 grid · label 10.5 upper ink-4 · mono 12.5'), row('Actions', 'outlined 12px, pad 7×12, radius 6')] },
+  { id: 'code', name: 'Code panel', desc: 'Dark in both modes. Accent is teal; prompt glyphs are ink-4.', rows: [row('Surface', 'code-bg · radius 12 · pad 24×28'), row('Type', 'mono 12–13 / 1.7, code-fg'), row('Accent', 'code-accent for identifiers that should be read'), row('Wrap', 'pre-wrap, break-all for URLs; never a horizontal scrollbar')] },
+  { id: 'trailer', name: 'Trailer tag', desc: 'Git commit trailers rendered as tags. Key muted, value ink.', rows: [row('Size', 'pad 3×8 · radius 4 · 1px line'), row('Type', 'mono 11.5 · key ink-4 · value ink-2'), row('Keys', 'Headwaters-Channel, -Intent, -Agent, -Model, -Cost, -Risk, Logbook'), row('Wrap', 'flex, 6px gap')] },
+  { id: 'rail', name: 'Left rail', desc: 'Five destinations. The active item is a surface well, not a colored bar. Eddy carries the only badge.', rows: [row('Width', '200px · surface-2 · 1px line right'), row('Item', 'h 38 · pad 9×10 · radius 8 · Inter 13.5/500'), row('Active', 'bg surface, ink; idle ink-2'), row('Icon', '16px, 1.75 stroke, currentColor'), row('Badge', 'amber pill h 20, 11/600 white, only when decisions > 0'), row('Footer', 'River name Lora 15 · owner/repo mono 11.5')] },
+  { id: 'topbar', name: 'Top bar', desc: 'River name, HEAD, and the counter. Nothing else.', rows: [row('Height', '56px · 1px line bottom · pad 0×32'), row('Name', 'Lora 500 18'), row('HEAD', 'mono 12 chip · pad 4×8 · radius 6'), row('Counter', 'right-aligned, Inter 13, nowrap'), row('Theme', '32px outlined toggle, ink-3')] },
+  { id: 'empty', name: 'Empty states', desc: 'A single calm line and one sentence. No illustration, no gradient.', rows: [row('River', 'mainline 2px across · “A quiet river.” · Open an Intent'), row('Eddy', 'hairline 1.5px, gentle S · “Nothing needs you. The river is running.”'), row('Scout', 'skeleton previews · “Scout is watching”'), row('Type', 'Lora 22 ink-2, centered')] }
+];
+
+class Component extends DCLogic {
+  state = { theme: null };
+  reduced = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  sample(kind) {
+    const h = React.createElement;
+    const mono = { fontFamily: 'var(--hw-font-mono)', fontSize: 11.5 };
+    const btn = (t, primary) => h('span', { style: { fontSize: 10.5, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', padding: '9px 12px', borderRadius: 8, whiteSpace: 'nowrap', background: primary ? 'var(--hw-color-ink)' : 'transparent', color: primary ? 'var(--hw-color-paper)' : 'var(--hw-color-ink)', border: primary ? '1px solid transparent' : '1px solid var(--hw-color-line-strong)' } }, t);
+    const line = (stroke, w, dash) => h('svg', { width: 120, height: 14, viewBox: '0 0 120 14' }, h('path', { d: 'M2 7 H118', stroke, strokeWidth: w, strokeLinecap: 'round', fill: 'none', strokeDasharray: dash }));
+    switch (kind) {
+      case 'chip': return h('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 8 } },
+        h('span', { style: { width: 8, height: 8, borderRadius: '50%', background: 'var(--hw-color-channel)', boxShadow: '0 0 0 3px var(--hw-color-channel-glow)' } }),
+        h('span', { style: { ...mono, padding: '3px 8px', borderRadius: 4, border: '1px solid var(--hw-color-line)', background: 'var(--hw-color-surface)' } }, 'ch-2 · claude-code · minimal-diff'),
+        h('span', { style: { ...mono, color: 'var(--hw-color-ink-3)' } }, 'pushed a41c…'));
+      case 'channel': return h('div', { style: { display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 14px', alignItems: 'center', ...mono, color: 'var(--hw-color-ink-3)' } },
+        line('var(--hw-color-line-strong)', 1), 'idle', line('var(--hw-color-channel)', 1.5), 'active', line('var(--hw-color-channel)', 2), 'pushed', line('var(--hw-color-ink-4)', 1.5), 'merged', line('var(--hw-color-conflict)', 1.5, '3 4'), 'conflict');
+      case 'dot': return h('svg', { width: 160, height: 24, viewBox: '0 0 160 24' }, h('path', { d: 'M0 12 H160', stroke: 'var(--hw-color-channel)', strokeWidth: 1.5, fill: 'none' }),
+        ...[30, 70, 110].map((x, i) => h('circle', { key: i, cx: x, cy: 12, r: 3, fill: 'var(--hw-color-channel)' })), h('circle', { cx: 140, cy: 12, r: 5, fill: 'var(--hw-color-paper)', stroke: 'var(--hw-color-channel)', strokeWidth: 1.5 }));
+      case 'event': return h('div', { style: { width: '100%', display: 'grid', gridTemplateColumns: '1fr auto', gap: '2px 12px', padding: '8px 0', borderTop: '1px solid var(--hw-color-line)', borderBottom: '1px solid var(--hw-color-line)', ...mono } },
+        h('span', { style: { color: 'var(--hw-color-channel)', fontWeight: 600 } }, 'repo.pushed'), h('span', { style: { color: 'var(--hw-color-ink-4)' } }, '12s'),
+        h('span', { style: { gridColumn: '1 / span 2', color: 'var(--hw-color-ink-2)' } }, 'ch-2 → a41c3f7 · 4 files'));
+      case 'counter': return h('div', { style: { display: 'flex', gap: 10, alignItems: 'baseline', flexWrap: 'wrap', justifyContent: 'center', fontFamily: 'var(--hw-font-display)', fontSize: 22, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' } },
+        '9 agents', h('span', { style: { color: 'var(--hw-color-ink-4)' } }, '·'), '41 commits', h('span', { style: { color: 'var(--hw-color-ink-4)' } }, '·'), h('span', { style: { color: 'var(--hw-color-human)' } }, '1 decision for you'));
+      case 'card': return h('div', { style: { position: 'relative', overflow: 'hidden', width: '100%', border: '1px solid var(--hw-color-line)', borderRadius: 12, background: 'var(--hw-color-surface)', padding: '16px 18px 16px 24px', display: 'flex', flexDirection: 'column', gap: 8 } },
+        h('span', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--hw-color-human)' } }),
+        h('div', { style: { fontFamily: 'var(--hw-font-display)', fontSize: 17 } }, 'Pick a dark mode'),
+        h('div', { style: { fontSize: 12.5, color: 'var(--hw-color-ink-2)' } }, 'Scout called a tie between ch-2 and ch-3.'),
+        h('div', { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } }, btn('Pick ch-2', true), btn('Pick ch-3', false)));
+      case 'verdict': return h('div', { style: { width: '100%', border: '1px solid var(--hw-color-channel)', borderRadius: 12, background: 'var(--hw-color-surface)', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 4 } },
+        h('div', { style: { fontSize: 10.5, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--hw-color-channel)' } }, 'Verdict · 1 ch-2 · 2 ch-3 · 3 ch-1'),
+        h('div', { style: { fontFamily: 'var(--hw-font-display)', fontSize: 14 } }, 'ch-2 keeps contrast and passes every test.'));
+      case 'gauge': return h('div', { style: { display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'center' } }, ...[[0.18, 'var(--hw-color-channel)'], [0.44, 'var(--hw-color-ink-3)'], [0.72, 'var(--hw-color-human)']].map(([v, c], i) =>
+        h('span', { key: i, style: { display: 'inline-flex', alignItems: 'center', gap: 8, ...mono, color: 'var(--hw-color-ink-2)' } },
+          h('svg', { width: 36, height: 20, viewBox: '0 0 36 20', fill: 'none', strokeLinecap: 'round' }, h('path', { d: 'M3 18 A15 15 0 0 1 33 18', stroke: 'var(--hw-color-line)', strokeWidth: 3 }), h('path', { d: 'M3 18 A15 15 0 0 1 33 18', stroke: c, strokeWidth: 3, pathLength: 1, strokeDasharray: `${v} 1` })), v.toFixed(2))));
+      case 'preview': return h('div', { style: { width: 200, aspectRatio: '16/10', borderRadius: 8, border: '1px solid var(--hw-color-line)', background: '#1c1917', color: '#fafaf9', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 } },
+        h('div', { style: { fontFamily: 'var(--hw-font-display)', fontSize: 11 } }, 'River levels'),
+        ...[62, 48, 35].map((w, i) => h('div', { key: i, style: { height: 4, borderRadius: 2, background: '#44403c' } }, h('div', { style: { height: 4, width: `${w}%`, borderRadius: 2, background: '#2dd4bf' } }))));
+      case 'code': return h('div', { style: { width: '100%', background: 'var(--hw-color-code-bg)', color: 'var(--hw-color-code-fg)', borderRadius: 12, padding: '12px 16px', ...mono, fontSize: 12, lineHeight: 1.7, wordBreak: 'break-all' } },
+        h('span', { style: { color: 'var(--hw-color-ink-4)' } }, '$ '), 'git clone https://x:<token>@braid.drp.icu/', h('span', { style: { color: 'var(--hw-color-code-accent)' } }, 'river-riverlevels--ch-2'), '.git');
+      case 'trailer': return h('div', { style: { display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' } }, ...[['Headwaters-Channel', 'ch-5'], ['Headwaters-Model', 'gpt-5-codex'], ['Headwaters-Risk', '0.72']].map(([k, v]) =>
+        h('span', { key: k, style: { ...mono, padding: '3px 8px', borderRadius: 4, border: '1px solid var(--hw-color-line)', background: 'var(--hw-color-paper)', color: 'var(--hw-color-ink-2)' } }, h('span', { style: { color: 'var(--hw-color-ink-4)' } }, k + ': '), v)));
+      case 'rail': return h('div', { style: { width: 176, borderRadius: 8, border: '1px solid var(--hw-color-line)', background: 'var(--hw-color-surface-2)', padding: 8, display: 'flex', flexDirection: 'column', gap: 2, fontSize: 13, fontWeight: 500 } },
+        h('div', { style: { padding: '8px 10px', borderRadius: 8, background: 'var(--hw-color-surface)' } }, 'Rivers'),
+        h('div', { style: { padding: '8px 10px', color: 'var(--hw-color-ink-2)' } }, 'Scout'),
+        h('div', { style: { padding: '8px 10px', color: 'var(--hw-color-ink-2)', display: 'flex' } }, 'Eddy', h('span', { style: { marginLeft: 'auto', minWidth: 20, height: 20, padding: '0 6px', borderRadius: 999, background: 'var(--hw-color-human)', color: '#fff', fontSize: 11, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } }, '1')));
+      case 'topbar': return h('div', { style: { width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, border: '1px solid var(--hw-color-line)', background: 'var(--hw-color-paper)', flexWrap: 'wrap' } },
+        h('span', { style: { fontFamily: 'var(--hw-font-display)', fontSize: 15 } }, 'riverlevels'),
+        h('span', { style: { ...mono, padding: '3px 7px', border: '1px solid var(--hw-color-line)', borderRadius: 6, background: 'var(--hw-color-surface)', color: 'var(--hw-color-ink-2)', whiteSpace: 'nowrap' } }, 'main @ 4f2a9c1'),
+        h('span', { style: { marginLeft: 'auto', fontSize: 12, color: 'var(--hw-color-ink-2)' } }, '9 agents · ', h('span', { style: { color: 'var(--hw-color-human)', fontWeight: 500, whiteSpace: 'nowrap' } }, '1 decision for you')));
+      case 'empty': return h('div', { style: { width: '100%', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', height: 56 } },
+        h('svg', { width: '100%', height: 24, viewBox: '0 0 400 24', preserveAspectRatio: 'none', style: { position: 'absolute', left: 0, right: 0, top: 16 } }, h('path', { d: 'M0 12 C60 12 80 10 140 10 S220 14 280 14 S360 12 400 12', stroke: 'var(--hw-color-mainline)', strokeWidth: 1.5, fill: 'none', vectorEffect: 'non-scaling-stroke' })),
+        h('span', { style: { position: 'relative', padding: '0 14px', background: 'var(--hw-color-paper)', fontFamily: 'var(--hw-font-display)', fontSize: 15, color: 'var(--hw-color-ink-2)', textAlign: 'center' } }, 'Nothing needs you. The river is running.'));
+    }
+    return null;
+  }
+
+  braidDemo() {
+    const h = React.createElement, r = this.reduced;
+    const W = 1000, cy = 90, x1 = 120, x2 = 320, x3 = 700, x4 = 880, n = 4;
+    const anim = (delay) => r ? {} : { strokeDasharray: 1, strokeDashoffset: 1, animation: `hw-draw var(--hw-motion-draw) var(--hw-motion-ease-in-out) ${delay}s forwards` };
+    const els = [h('path', { key: 'a', d: `M0 ${cy} H${x1}`, stroke: 'var(--hw-color-mainline)', strokeWidth: 2.5, fill: 'none', strokeLinecap: 'round' })];
+    for (let i = 0; i < n; i++) {
+      const y = cy - 45 + i * 30, xm = (x2 + x3) / 2, drift = i % 2 ? 7 : -7;
+      const d = `M${x1} ${cy} C${x1 + 110} ${cy} ${x2 - 110} ${y} ${x2} ${y} C${xm - 130} ${y} ${xm - 70} ${y + drift} ${xm} ${y + drift} C${xm + 70} ${y + drift} ${xm + 130} ${y} ${x3} ${y} C${x3 + 110} ${y} ${x4 - 110} ${cy} ${x4} ${cy}`;
+      els.push(h('path', { key: 'c' + i, d, stroke: 'var(--hw-color-channel)', strokeWidth: 1.5, fill: 'none', strokeLinecap: 'round', pathLength: 1, style: anim(0.3 + i * 0.1) }));
+    }
+    els.push(h('path', { key: 'b', d: `M${x4} ${cy} H${W}`, stroke: 'var(--hw-color-mainline)', strokeWidth: 3.5, fill: 'none', strokeLinecap: 'round', pathLength: 1, style: anim(1.4) }));
+    [[x1, 'fork · 1200ms'], [(x2 + x3) / 2, 'run · drift ±9px'], [x4, 'rejoin · 1200ms']].forEach(([x, t], i) => els.push(
+      h('path', { key: 'lp' + i, d: `M${x} 150 V160`, stroke: 'var(--hw-color-line-strong)', strokeWidth: 1 }),
+      h('text', { key: 'l' + i, x, y: 174, textAnchor: 'middle', fontFamily: 'var(--hw-font-mono)', fontSize: 11, fill: 'var(--hw-color-ink-3)' }, t)));
+    return h('svg', { viewBox: `0 0 ${W} 180`, width: '100%', style: { display: 'block', overflow: 'visible' } }, ...els);
+  }
+
+  renderVals() {
+    const theme = this.state.theme ?? this.props.theme ?? 'light';
+    if (!this._components) {
+      this._components = COMPONENTS.map(c => ({ ...c, sample: this.sample(c.id) }));
+      this._braid = this.braidDemo();
+    }
+    return {
+      theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      colors: COLORS.map(([name, use]) => ({ name, use, val: `var(${name})` })),
+      components: this._components, braidDemo: this._braid, codeLines: CODE
+    };
+  }
+}
+</script>
+</body>
+</html>

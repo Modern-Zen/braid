@@ -1,0 +1,129 @@
+/* Headwaters — design tokens
+   Grounded in the Modern Zen system (teal / stone / Lora + Inter).
+   Light = Paper, dark = Basalt. Amber is reserved for "needs a human". */
+
+@font-face { font-family: "Inter"; src: url("fonts/Inter-VariableFont.ttf") format("truetype-variations"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "Lora"; src: url("fonts/Lora-VariableFont.ttf") format("truetype-variations"); font-weight: 400 700; font-display: swap; }
+@font-face { font-family: "Lora"; src: url("fonts/Lora-Italic-VariableFont.ttf") format("truetype-variations"); font-weight: 400 700; font-style: italic; font-display: swap; }
+
+:root, [data-hw-theme="light"] {
+  /* Surfaces */
+  --hw-color-paper: #fafaf9;          /* stone-50 — page */
+  --hw-color-surface: #ffffff;        /* cards */
+  --hw-color-surface-2: #f5f5f4;      /* stone-100 — wells, rails */
+  --hw-color-code-bg: #1c1917;        /* stone-900 */
+  --hw-color-code-fg: #d6d3d1;        /* stone-300 */
+  --hw-color-code-accent: #2dd4bf;    /* teal-400 */
+  /* Ink */
+  --hw-color-ink: #1c1917;            /* stone-900 — headings, primary */
+  --hw-color-ink-2: #57534e;          /* stone-600 — body */
+  --hw-color-ink-3: #78716c;          /* stone-500 — secondary */
+  --hw-color-ink-4: #a8a29e;          /* stone-400 — captions */
+  --hw-color-ink-on-accent: #ffffff;
+  /* Structure */
+  --hw-color-line: #e7e5e4;           /* stone-200 — borders, idle channels */
+  --hw-color-line-strong: #d6d3d1;    /* stone-300 */
+  --hw-color-mainline: #1c1917;       /* the river's main channel */
+  /* Channel accent (glacial teal) */
+  --hw-color-channel: #0d9488;        /* teal-600 — active channels, links, agents */
+  --hw-color-channel-hover: #0f766e;  /* teal-700 */
+  --hw-color-channel-soft: #ccfbf1;   /* teal-100 — chips, fills */
+  --hw-color-channel-glow: rgba(13, 148, 136, 0.18);
+  /* Semantic */
+  --hw-color-human: #d97706;          /* amber-600 — the ONLY warm color. A person must decide. */
+  --hw-color-human-soft: rgba(217, 119, 6, 0.12);
+  --hw-color-merged: #047857;         /* emerald-700 */
+  --hw-color-merged-soft: rgba(4, 120, 87, 0.12);
+  --hw-color-conflict: #e11d48;       /* rose-600 — shoals, failed tests. Sparingly. */
+  --hw-color-conflict-soft: rgba(225, 29, 72, 0.10);
+  --hw-shadow-xs: 0 1px 2px rgba(28, 25, 23, 0.04);
+  --hw-shadow-sm: 0 1px 3px rgba(28, 25, 23, 0.05), 0 1px 2px rgba(28, 25, 23, 0.04);
+  --hw-shadow-md: 0 4px 12px rgba(28, 25, 23, 0.06), 0 2px 4px rgba(28, 25, 23, 0.04);
+  --hw-shadow-lg: 0 12px 32px rgba(28, 25, 23, 0.08), 0 4px 8px rgba(28, 25, 23, 0.04);
+  --hw-shadow-ring: 0 0 0 3px rgba(13, 148, 136, 0.18);
+  --hw-shadow-ring-human: 0 0 0 3px rgba(217, 119, 6, 0.22);
+  color-scheme: light;
+}
+
+[data-hw-theme="dark"] {
+  --hw-color-paper: #1c1917;          /* stone-900 — a river at night */
+  --hw-color-surface: #292524;        /* stone-800 */
+  --hw-color-surface-2: #44403c;      /* stone-700 */
+  --hw-color-code-bg: #0f0e0d;
+  --hw-color-code-fg: #d6d3d1;
+  --hw-color-code-accent: #5eead4;    /* teal-300 */
+  --hw-color-ink: #fafaf9;
+  --hw-color-ink-2: #d6d3d1;          /* stone-300 */
+  --hw-color-ink-3: #a8a29e;          /* stone-400 */
+  --hw-color-ink-4: #78716c;          /* stone-500 */
+  --hw-color-ink-on-accent: #0f0e0d;
+  --hw-color-line: #44403c;           /* stone-700 */
+  --hw-color-line-strong: #57534e;    /* stone-600 */
+  --hw-color-mainline: #fafaf9;
+  --hw-color-channel: #2dd4bf;        /* teal-400 — glows faintly */
+  --hw-color-channel-hover: #5eead4;  /* teal-300 */
+  --hw-color-channel-soft: rgba(45, 212, 191, 0.14);
+  --hw-color-channel-glow: rgba(45, 212, 191, 0.38);
+  --hw-color-human: #d97706;
+  --hw-color-human-soft: rgba(217, 119, 6, 0.18);
+  --hw-color-merged: #34d399;         /* emerald-400 */
+  --hw-color-merged-soft: rgba(52, 211, 153, 0.14);
+  --hw-color-conflict: #e11d48;
+  --hw-color-conflict-soft: rgba(225, 29, 72, 0.16);
+  --hw-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --hw-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --hw-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --hw-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --hw-shadow-ring: 0 0 0 3px rgba(45, 212, 191, 0.25);
+  --hw-shadow-ring-human: 0 0 0 3px rgba(217, 119, 6, 0.3);
+  color-scheme: dark;
+}
+
+:root {
+  /* Type */
+  --hw-font-display: "Lora", Georgia, "Times New Roman", serif;
+  --hw-font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --hw-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --hw-text-xs: 12px;  --hw-text-sm: 14px;  --hw-text-base: 16px; --hw-text-lg: 18px;
+  --hw-text-xl: 20px;  --hw-text-2xl: 24px; --hw-text-3xl: 30px;  --hw-text-4xl: 36px;
+  --hw-text-5xl: 48px; --hw-text-6xl: 60px; --hw-text-7xl: 72px;  --hw-text-8xl: 96px;
+  --hw-display-weight: 500; --hw-display-lh: 1.05; --hw-display-tracking: -0.02em;
+  --hw-ui-lh: 1.5; --hw-body-lh: 1.625;
+  --hw-label-size: 11px; --hw-label-weight: 600; --hw-label-tracking: 0.18em; --hw-label-transform: uppercase;
+  --hw-mono-size: 12.5px;
+  /* Space — 4px grid */
+  --hw-space-1: 4px;  --hw-space-2: 8px;  --hw-space-3: 12px; --hw-space-4: 16px; --hw-space-5: 20px;
+  --hw-space-6: 24px; --hw-space-8: 32px; --hw-space-10: 40px; --hw-space-12: 48px; --hw-space-16: 64px;
+  --hw-space-20: 80px; --hw-space-24: 96px; --hw-space-32: 128px;
+  /* Radius */
+  --hw-radius-xs: 4px; --hw-radius-sm: 6px; --hw-radius-md: 8px; --hw-radius-lg: 12px;
+  --hw-radius-xl: 16px; --hw-radius-2xl: 24px; --hw-radius-full: 9999px;
+  /* Strokes — the river */
+  --hw-stroke-hair: 1px;      /* idle channel, diagram lines */
+  --hw-stroke-channel: 1.5px; /* active channel */
+  --hw-stroke-main: 2.5px;    /* mainline */
+  /* Motion — UI */
+  --hw-motion-fast: 140ms; --hw-motion-base: 220ms; --hw-motion-slow: 360ms;
+  --hw-motion-ease-out: cubic-bezier(0.2, 0.6, 0.2, 1);
+  --hw-motion-ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  /* Motion — river (slow, fluid; nothing bounces) */
+  --hw-motion-draw: 900ms;    /* a line draws on */
+  --hw-motion-fork: 1200ms;   /* a channel splits or rejoins */
+  --hw-motion-pulse: 2400ms;  /* agent dot breathing */
+  --hw-motion-drift: 14s;     /* an agent travels its channel */
+  /* Layout */
+  --hw-container-max: 1200px; --hw-container-pad: 24px;
+  --hw-rail-width: 200px; --hw-topbar-height: 56px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --hw-motion-draw: 0ms; --hw-motion-fork: 0ms; --hw-motion-pulse: 0ms; --hw-motion-drift: 0ms; }
+}
+
+/* Motion primitives for the river line work */
+@keyframes hw-draw { to { stroke-dashoffset: 0; } }
+@keyframes hw-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes hw-human { 0%, 38% { stroke: var(--hw-color-channel); } 46%, 62% { stroke: var(--hw-color-human); } 70%, 100% { stroke: var(--hw-color-channel); } }
+@keyframes hw-human-fill { 0%, 38% { fill: var(--hw-color-channel); } 46%, 62% { fill: var(--hw-color-human); } 70%, 100% { fill: var(--hw-color-channel); } }
+@keyframes hw-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hw-still { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2px); } }

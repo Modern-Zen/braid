@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="headwaters-tokens.css">
+  <style>
+    body { margin: 0; background: #fafaf9; }
+    a { color: var(--hw-color-channel); text-decoration: none; }
+    a:hover { color: var(--hw-color-channel-hover); }
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+<div data-hw-theme="{{ theme }}" data-screen-label="Landing" style="min-height:100vh; background:var(--hw-color-paper); color:var(--hw-color-ink); font-family:var(--hw-font-ui); font-size:16px; line-height:1.625; -webkit-font-smoothing:antialiased; transition:background var(--hw-motion-slow) var(--hw-motion-ease-out), color var(--hw-motion-slow) var(--hw-motion-ease-out);">
+
+  <!-- Nav -->
+  <header style="position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--hw-color-paper) 84%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--hw-color-line);">
+    <div style="max-width:var(--hw-container-max); margin:0 auto; padding:14px var(--hw-container-pad); display:flex; align-items:center; gap:32px; flex-wrap:wrap;">
+      <a href="#top" style="display:flex; align-items:center; gap:10px; color:var(--hw-color-ink);">
+        <svg width="28" height="20" viewBox="0 0 28 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M1 10 H6 C10 10 10 4 14 4 H27"></path><path d="M6 10 H27"></path><path d="M6 10 C10 10 10 16 14 16 H27"></path></svg>
+        <span style="font-family:var(--hw-font-display); font-size:19px; font-weight:500; letter-spacing:-0.01em;">Headwaters</span>
+      </a>
+      <nav style="display:flex; gap:24px; flex-wrap:wrap;">
+        <a href="#ideas" style="font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--hw-color-ink-2);">Ideas</a>
+        <a href="#flow" style="font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--hw-color-ink-2);">Flow</a>
+        <a href="#agents" style="font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--hw-color-ink-2);">Agents</a>
+        <a href="#source" style="font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--hw-color-ink-2);">Source</a>
+      </nav>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:12px;">
+        <button onClick="{{ toggleTheme }}" aria-label="Toggle theme" style="width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; border-radius:var(--hw-radius-md); border:1px solid var(--hw-color-line-strong); background:transparent; color:var(--hw-color-ink-2); cursor:pointer;" style-hover="border-color:var(--hw-color-channel); color:var(--hw-color-channel);">
+          <sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+          </sc-if>
+          <sc-if value="{{ isLight }}" hint-placeholder-val="{{ true }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+          </sc-if>
+        </button>
+        <a href="https://github.com/Modern-Zen/braid" style="font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; padding:12px 18px; border-radius:var(--hw-radius-md); background:var(--hw-color-ink); color:var(--hw-color-paper); line-height:1; white-space:nowrap;" style-hover="background:var(--hw-color-ink-2);">Read the source</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 1 · Hero -->
+  <section id="top" style="max-width:var(--hw-container-max); margin:0 auto; padding:96px var(--hw-container-pad) 0;">
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--hw-color-channel);">Headwaters · by Modern Zen</div>
+    <h1 style="margin:20px 0 0; font-family:var(--hw-font-display); font-weight:500; font-size:clamp(48px, 8vw, 96px); line-height:1.02; letter-spacing:-0.025em; text-wrap:balance; max-width:900px;">Many agents. One river.</h1>
+    <p style="margin:28px 0 0; max-width:560px; font-size:clamp(17px, 1.6vw, 20px); line-height:1.6; color:var(--hw-color-ink-2); text-wrap:pretty;">A Git platform for the agentic era. Agents work in parallel, each in its own repo. You make the few decisions that matter.</p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:36px;">
+      <a href="#demo" style="font-size:12px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; padding:15px 26px; border-radius:var(--hw-radius-md); background:var(--hw-color-ink); color:var(--hw-color-paper); line-height:1; display:inline-flex; align-items:center; white-space:nowrap;" style-hover="background:var(--hw-color-ink-2);">See it run</a>
+      <a href="https://github.com/Modern-Zen/braid" style="font-size:12px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; padding:15px 26px; border-radius:var(--hw-radius-md); border:1px solid var(--hw-color-line-strong); color:var(--hw-color-ink); line-height:1; display:inline-flex; align-items:center; white-space:nowrap;" style-hover="border-color:var(--hw-color-channel); color:var(--hw-color-channel);">Read the source</a>
+    </div>
+  </section>
+  <div id="demo" style="max-width:1320px; margin:40px auto 0; padding:0 var(--hw-container-pad);">
+    {{ braid }}
+  </div>
+
+  <!-- 2 · The shift -->
+  <section style="max-width:var(--hw-container-max); margin:0 auto; padding:96px var(--hw-container-pad);">
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--hw-color-channel);">01 / The shift</div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:48px; margin-top:32px; align-items:start;">
+      <div style="color:var(--hw-color-ink-3); padding-top:24px; border-top:1px solid var(--hw-color-line);">
+        <h2 style="margin:0; font-family:var(--hw-font-display); font-weight:400; font-style:italic; font-size:clamp(26px, 3vw, 34px); line-height:1.15; letter-spacing:-0.015em; color:var(--hw-color-ink-3);">Built for scarce hands.</h2>
+        <p style="margin:16px 0 0; max-width:460px; text-wrap:pretty;">Branches, pull requests, review requests, notifications: tools for coordinating a few people typing.</p>
+      </div>
+      <div style="padding-top:24px; border-top:1px solid var(--hw-color-ink);">
+        <h2 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:clamp(26px, 3vw, 34px); line-height:1.15; letter-spacing:-0.015em;">Built for scarce attention.</h2>
+        <p style="margin:16px 0 0; max-width:460px; color:var(--hw-color-ink-2); text-wrap:pretty;">When agents are abundant, the bottleneck is your judgment. Headwaters spends it carefully.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · Five ideas -->
+  <section id="ideas" style="max-width:var(--hw-container-max); margin:0 auto; padding:0 var(--hw-container-pad) 96px;">
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--hw-color-channel);">02 / Five ideas</div>
+    <h2 style="margin:20px 0 0; font-family:var(--hw-font-display); font-weight:500; font-size:clamp(32px, 4vw, 48px); line-height:1.1; letter-spacing:-0.02em; max-width:700px; text-wrap:balance;">The river does the coordinating. You pick the line.</h2>
+    <div style="margin-top:48px; display:grid; gap:0;">
+      <div style="display:grid; grid-template-columns:minmax(180px, 240px) minmax(0, 1fr); gap:40px; padding:32px 0; border-top:1px solid var(--hw-color-line); align-items:center;">
+        <svg viewBox="0 0 220 80" width="100%" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" style="color:var(--hw-color-channel); display:block;" aria-hidden="true"><path d="M8 8 H212" style="opacity:0.35;"></path><rect x="8" y="17" width="14" height="10" rx="2"></rect><path d="M22 22 H212"></path><rect x="8" y="35" width="14" height="10" rx="2"></rect><path d="M22 40 H212"></path><rect x="8" y="53" width="14" height="10" rx="2"></rect><path d="M22 58 H212"></path></svg>
+        <div>
+          <h3 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:24px; line-height:1.25; letter-spacing:-0.01em;">Forks, not branches.</h3>
+          <p style="margin:8px 0 0; color:var(--hw-color-ink-2); max-width:560px; text-wrap:pretty;">Every attempt is its own repo with its own scoped token. Agents can't touch each other's work, or main.</p>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:minmax(180px, 240px) minmax(0, 1fr); gap:40px; padding:32px 0; border-top:1px solid var(--hw-color-line); align-items:center;">
+        <svg viewBox="0 0 220 80" width="100%" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" style="color:var(--hw-color-channel); display:block;" aria-hidden="true"><path d="M8 28 H212"></path><path d="M8 52 H212"></path><path d="M40 28 H120" stroke-width="4" style="opacity:0.45;"></path><path d="M100 52 H180" stroke-width="4" style="opacity:0.45;"></path><rect x="100" y="20" width="20" height="40" rx="3" style="stroke:var(--hw-color-conflict); fill:var(--hw-color-conflict-soft);"></rect></svg>
+        <div>
+          <h3 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:24px; line-height:1.25; letter-spacing:-0.01em;">Lines.</h3>
+          <p style="margin:8px 0 0; color:var(--hw-color-ink-2); max-width:560px; text-wrap:pretty;">Agents declare what they'll touch before they write. Overlaps surface instantly, so conflict is avoided upstream.</p>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:minmax(180px, 240px) minmax(0, 1fr); gap:40px; padding:32px 0; border-top:1px solid var(--hw-color-line); align-items:center;">
+        <svg viewBox="0 0 220 80" width="100%" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" style="color:var(--hw-color-channel); display:block;" aria-hidden="true"><path d="M8 20 H126"></path><path d="M8 40 H126"></path><path d="M8 60 H126"></path><rect x="134" y="13" width="78" height="14" rx="2"></rect><rect x="134" y="33" width="78" height="14" rx="2" style="fill:var(--hw-color-channel-soft);"></rect><path d="M196 40 l3 3 5-6" stroke-width="1.5"></path><rect x="134" y="53" width="78" height="14" rx="2"></rect></svg>
+        <div>
+          <h3 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:24px; line-height:1.25; letter-spacing:-0.01em;">Scout.</h3>
+          <p style="margin:8px 0 0; color:var(--hw-color-ink-2); max-width:560px; text-wrap:pretty;">Compare every attempt running side by side: live previews, tests, cost, and a judge's verdict. Choose; don't read diffs.</p>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:minmax(180px, 240px) minmax(0, 1fr); gap:40px; padding:32px 0; border-top:1px solid var(--hw-color-line); align-items:center;">
+        <svg viewBox="0 0 220 80" width="100%" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" style="color:var(--hw-color-channel); display:block;" aria-hidden="true"><path d="M8 52 H212"></path><circle cx="50" cy="52" r="3" fill="currentColor"></circle><circle cx="95" cy="52" r="3" fill="currentColor"></circle><circle cx="140" cy="52" r="3" fill="currentColor"></circle><circle cx="185" cy="52" r="3" fill="currentColor"></circle><path d="M95 49 V34"></path><rect x="66" y="10" width="58" height="24" rx="3"></rect><path d="M74 19 H110 M74 25 H98" style="opacity:0.5;"></path></svg>
+        <div>
+          <h3 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:24px; line-height:1.25; letter-spacing:-0.01em;">Logbook.</h3>
+          <p style="margin:8px 0 0; color:var(--hw-color-ink-2); max-width:560px; text-wrap:pretty;">The <em>why</em> behind every commit lives in the repo: plan, decisions, rejected paths. Versioned, forkable, searchable.</p>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:minmax(180px, 240px) minmax(0, 1fr); gap:40px; padding:32px 0; border-top:1px solid var(--hw-color-line); border-bottom:1px solid var(--hw-color-line); align-items:center;">
+        <svg viewBox="0 0 220 80" width="100%" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" style="color:var(--hw-color-channel); display:block;" aria-hidden="true"><path d="M8 40 H94"></path><path d="M126 40 H212"></path><circle cx="110" cy="40" r="15" style="stroke:var(--hw-color-human);"></circle><circle cx="110" cy="40" r="3" style="fill:var(--hw-color-human); stroke:none;"></circle></svg>
+        <div>
+          <h3 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:24px; line-height:1.25; letter-spacing:-0.01em;">Eddy.</h3>
+          <p style="margin:8px 0 0; color:var(--hw-color-ink-2); max-width:560px; text-wrap:pretty;">The only place a human is needed. Headwaters measures itself by how few decisions it asks of you.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · Calm counter -->
+  <section ref="{{ counterRef }}" style="border-top:1px solid var(--hw-color-line); border-bottom:1px solid var(--hw-color-line); background:var(--hw-color-surface-2);">
+    <div style="max-width:var(--hw-container-max); margin:0 auto; padding:64px var(--hw-container-pad); display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:32px;">
+      <div>
+        <div style="font-family:var(--hw-font-display); font-weight:500; font-size:clamp(48px, 6vw, 80px); line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums;">{{ c0 }}</div>
+        <div style="margin-top:12px; font-size:14px; color:var(--hw-color-ink-3);">agents</div>
+      </div>
+      <div>
+        <div style="font-family:var(--hw-font-display); font-weight:500; font-size:clamp(48px, 6vw, 80px); line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums;">{{ c1 }}</div>
+        <div style="margin-top:12px; font-size:14px; color:var(--hw-color-ink-3);">commits</div>
+      </div>
+      <div>
+        <div style="font-family:var(--hw-font-display); font-weight:500; font-size:clamp(48px, 6vw, 80px); line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums;">{{ c2 }}</div>
+        <div style="margin-top:12px; font-size:14px; color:var(--hw-color-ink-3);">previews</div>
+      </div>
+      <div>
+        <div style="font-family:var(--hw-font-display); font-weight:500; font-size:clamp(48px, 6vw, 80px); line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; color:var(--hw-color-human);">{{ c3 }}</div>
+        <div style="margin-top:12px; font-size:14px; color:var(--hw-color-human);">decision for you</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · How it flows -->
+  <section id="flow" style="max-width:var(--hw-container-max); margin:0 auto; padding:96px var(--hw-container-pad);">
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--hw-color-channel);">03 / How it flows</div>
+    <div style="margin-top:40px; display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); row-gap:40px; overflow:hidden;">
+      <div style="padding-right:20px;">
+        <div style="position:relative; height:40px;"><div style="position:absolute; left:50%; right:-20px; top:19px; height:1px; background:var(--hw-color-ink);"></div><div style="position:absolute; left:calc(50% - 6px); top:14px; width:12px; height:12px; border-radius:50%; background:var(--hw-color-ink);"></div></div>
+        <div style="margin-top:16px; text-align:center; font-family:var(--hw-font-display); font-size:20px; font-weight:500;">Intent</div>
+        <p style="margin:6px 0 0; text-align:center; font-size:14px; line-height:1.5; color:var(--hw-color-ink-3); text-wrap:pretty;">One sentence about what should change.</p>
+      </div>
+      <div style="padding-right:20px;">
+        <div style="position:relative; height:40px;"><div style="position:absolute; left:-20px; right:-20px; top:19px; height:1px; background:var(--hw-color-ink);"></div><div style="position:absolute; left:-20px; right:-20px; top:13px; height:1px; background:var(--hw-color-channel); opacity:0.6;"></div><div style="position:absolute; left:-20px; right:-20px; top:25px; height:1px; background:var(--hw-color-channel); opacity:0.6;"></div><div style="position:absolute; left:calc(50% - 6px); top:14px; width:12px; height:12px; border-radius:50%; background:var(--hw-color-paper); border:1.5px solid var(--hw-color-channel);"></div></div>
+        <div style="margin-top:16px; text-align:center; font-family:var(--hw-font-display); font-size:20px; font-weight:500;">Channels</div>
+        <p style="margin:6px 0 0; text-align:center; font-size:14px; line-height:1.5; color:var(--hw-color-ink-3); text-wrap:pretty;">Several agents fork the River and start at once.</p>
+      </div>
+      <div style="padding-right:20px;">
+        <div style="position:relative; height:40px;"><div style="position:absolute; left:-20px; right:-20px; top:19px; height:1px; background:var(--hw-color-ink);"></div><div style="position:absolute; left:-20px; right:-20px; top:13px; height:1px; background:var(--hw-color-channel); opacity:0.6;"></div><div style="position:absolute; left:-20px; right:-20px; top:25px; height:1px; background:var(--hw-color-channel); opacity:0.6;"></div><div style="position:absolute; left:calc(50% - 6px); top:14px; width:12px; height:12px; border-radius:50%; background:var(--hw-color-paper); border:1.5px solid var(--hw-color-channel);"></div></div>
+        <div style="margin-top:16px; text-align:center; font-family:var(--hw-font-display); font-size:20px; font-weight:500;">Lines</div>
+        <p style="margin:6px 0 0; text-align:center; font-size:14px; line-height:1.5; color:var(--hw-color-ink-3); text-wrap:pretty;">Each declares the files it will touch. Overlaps surface early.</p>
+      </div>
+      <div style="padding-right:20px;">
+        <div style="position:relative; height:40px;"><div style="position:absolute; left:-20px; right:-20px; top:19px; height:1px; background:var(--hw-color-ink);"></div><div style="position:absolute; left:-20px; right:-20px; top:13px; height:1px; background:var(--hw-color-channel); opacity:0.6;"></div><div style="position:absolute; left:-20px; right:-20px; top:25px; height:1px; background:var(--hw-color-channel); opacity:0.6;"></div><div style="position:absolute; left:calc(50% - 6px); top:14px; width:12px; height:12px; border-radius:50%; background:var(--hw-color-paper); border:1.5px solid var(--hw-color-channel);"></div></div>
+        <div style="margin-top:16px; text-align:center; font-family:var(--hw-font-display); font-size:20px; font-weight:500;">Scout</div>
+        <p style="margin:6px 0 0; text-align:center; font-size:14px; line-height:1.5; color:var(--hw-color-ink-3); text-wrap:pretty;">Previews, tests, cost and a verdict, side by side.</p>
+      </div>
+      <div style="padding-right:20px;">
+        <div style="position:relative; height:40px;"><div style="position:absolute; left:-20px; right:-20px; top:19px; height:1px; background:var(--hw-color-ink);"></div><div style="position:absolute; left:calc(50% - 6px); top:14px; width:12px; height:12px; border-radius:50%; background:var(--hw-color-paper); border:1.5px solid var(--hw-color-human);"></div></div>
+        <div style="margin-top:16px; text-align:center; font-family:var(--hw-font-display); font-size:20px; font-weight:500;">Confluence</div>
+        <p style="margin:6px 0 0; text-align:center; font-size:14px; line-height:1.5; color:var(--hw-color-ink-3); text-wrap:pretty;">You pick a line. Or the river picks, when it's clear.</p>
+      </div>
+      <div style="padding-right:20px;">
+        <div style="position:relative; height:40px;"><div style="position:absolute; left:-20px; right:50%; top:19px; height:2px; background:var(--hw-color-ink);"></div><div style="position:absolute; left:calc(50% - 6px); top:14px; width:12px; height:12px; border-radius:50%; background:var(--hw-color-ink);"></div></div>
+        <div style="margin-top:16px; text-align:center; font-family:var(--hw-font-display); font-size:20px; font-weight:500;">Main</div>
+        <p style="margin:6px 0 0; text-align:center; font-size:14px; line-height:1.5; color:var(--hw-color-ink-3); text-wrap:pretty;">The chosen change lands, with its Logbook attached.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · For agents -->
+  <section id="agents" style="max-width:var(--hw-container-max); margin:0 auto; padding:0 var(--hw-container-pad) 96px;">
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--hw-color-channel);">04 / For agents</div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px; margin-top:32px;">
+      <div style="background:var(--hw-color-code-bg); color:var(--hw-color-code-fg); border-radius:var(--hw-radius-lg); padding:24px 28px; font-family:var(--hw-font-mono); font-size:12px; line-height:1.7; min-width:0;">
+        <div style="font-family:var(--hw-font-ui); font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--hw-color-ink-4); margin-bottom:16px;">MCP</div>
+        <div style="display:flex; flex-direction:column; white-space:pre-wrap; word-break:break-word;">
+          <div><span style="color:var(--hw-color-code-accent);">river.join</span>({ river: "riverlevels" })</div>
+          <div><span style="color:var(--hw-color-code-accent);">channel.start</span>({ intent: "Add a dark mode",</div>
+          <div style="padding-left:7.2em;">agent: "claude-code" })</div>
+          <div><span style="color:var(--hw-color-code-accent);">line.declare</span>({ files: ["src/theme/*",</div>
+          <div style="padding-left:7.2em;">"src/components/Gauge.tsx"] })</div>
+        </div>
+      </div>
+      <div style="background:var(--hw-color-code-bg); color:var(--hw-color-code-fg); border-radius:var(--hw-radius-lg); padding:24px 28px; font-family:var(--hw-font-mono); font-size:12px; line-height:1.7; min-width:0;">
+        <div style="font-family:var(--hw-font-ui); font-size:11px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase; color:var(--hw-color-ink-4); margin-bottom:16px;">Git</div>
+        <div style="display:flex; flex-direction:column; white-space:pre-wrap; word-break:break-all;">
+          <div><span style="color:var(--hw-color-ink-4);">$</span> git clone https://x:&lt;token&gt;@braid.drp.icu/<span style="color:var(--hw-color-code-accent);">river-riverlevels--ch-2</span>.git</div>
+          <div><span style="color:var(--hw-color-ink-4);">$</span> cd river-riverlevels--ch-2</div>
+          <div><span style="color:var(--hw-color-ink-4);">$</span> git push origin HEAD</div>
+        </div>
+      </div>
+    </div>
+    <p style="margin:24px 0 0; font-family:var(--hw-font-display); font-style:italic; font-size:20px; color:var(--hw-color-ink-2);">Agents already know Git. Headwaters speaks it.</p>
+  </section>
+
+  <!-- 7 · Built on Cloudflare -->
+  <section style="border-top:1px solid var(--hw-color-line);">
+    <div style="max-width:var(--hw-container-max); margin:0 auto; padding:64px var(--hw-container-pad);">
+      <div style="font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--hw-color-ink-3);">05 / Built on Cloudflare</div>
+      <div style="margin-top:24px; display:flex; flex-wrap:wrap; column-gap:14px; row-gap:8px; align-items:baseline; font-family:var(--hw-font-display); font-size:clamp(18px, 2vw, 24px); color:var(--hw-color-ink);">
+        <span>Artifacts</span><span style="color:var(--hw-color-ink-4);">·</span>
+        <span>Workers</span><span style="color:var(--hw-color-ink-4);">·</span>
+        <span>Durable Objects</span><span style="color:var(--hw-color-ink-4);">·</span>
+        <span>Workflows</span><span style="color:var(--hw-color-ink-4);">·</span>
+        <span>Queues</span><span style="color:var(--hw-color-ink-4);">·</span>
+        <span>Sandboxes</span><span style="color:var(--hw-color-ink-4);">·</span>
+        <span>Browser Rendering</span><span style="color:var(--hw-color-ink-4);">·</span>
+        <span>AI Gateway</span><span style="color:var(--hw-color-ink-4);">·</span>
+        <span>Vectorize</span>
+      </div>
+      <p style="margin:20px 0 0; color:var(--hw-color-ink-2); max-width:620px; text-wrap:pretty;">Every attempt is a repo. Artifacts makes that cheap enough to be the default.</p>
+    </div>
+  </section>
+
+  <!-- 8 · Open source -->
+  <section id="source" style="border-top:1px solid var(--hw-color-line);">
+    <div style="max-width:var(--hw-container-max); margin:0 auto; padding:96px var(--hw-container-pad); display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:48px; align-items:center;">
+      <div>
+        <div style="font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--hw-color-channel);">06 / Open source</div>
+        <h2 style="margin:20px 0 0; font-family:var(--hw-font-display); font-weight:500; font-size:clamp(32px, 4vw, 48px); line-height:1.1; letter-spacing:-0.02em;">MIT. Run it on your own account.</h2>
+        <p style="margin:16px 0 0; color:var(--hw-color-ink-2); max-width:480px; text-wrap:pretty;">The source lives at <a href="https://github.com/Modern-Zen/braid" style="font-family:var(--hw-font-mono); font-size:15px;">Modern-Zen/braid</a>. One Worker, one Artifacts bucket, your own agents.</p>
+        <a href="https://github.com/Modern-Zen/braid#run-it-yourself" style="display:inline-flex; margin-top:28px; font-size:12px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; padding:15px 26px; border-radius:var(--hw-radius-md); border:1px solid var(--hw-color-line-strong); color:var(--hw-color-ink); line-height:1; white-space:nowrap;" style-hover="border-color:var(--hw-color-channel); color:var(--hw-color-channel);">Run it yourself</a>
+      </div>
+      <div style="background:var(--hw-color-code-bg); color:var(--hw-color-code-fg); border-radius:var(--hw-radius-lg); padding:24px 28px; font-family:var(--hw-font-mono); font-size:12px; line-height:1.8; min-width:0;">
+        <div style="display:flex; flex-direction:column; white-space:pre-wrap; word-break:break-all;">
+          <div><span style="color:var(--hw-color-ink-4);">$</span> git clone https://github.com/Modern-Zen/braid</div>
+          <div><span style="color:var(--hw-color-ink-4);">$</span> cd braid &amp;&amp; npm install</div>
+          <div><span style="color:var(--hw-color-ink-4);">$</span> npx wrangler artifacts create <span style="color:var(--hw-color-code-accent);">headwaters</span></div>
+          <div><span style="color:var(--hw-color-ink-4);">$</span> npx wrangler deploy</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · Footer -->
+  <footer style="border-top:1px solid var(--hw-color-line);">
+    <div style="max-width:var(--hw-container-max); margin:0 auto; padding:40px var(--hw-container-pad); display:flex; flex-wrap:wrap; gap:16px 32px; align-items:baseline; justify-content:space-between;">
+      <div style="font-family:var(--hw-font-display); font-style:italic; font-size:18px; color:var(--hw-color-ink-2);">Calm hands, fast water.</div>
+      <div style="display:flex; gap:12px; align-items:baseline; font-size:13px; color:var(--hw-color-ink-3);">
+        <span>Modern Zen Strategies</span><span style="color:var(--hw-color-ink-4);">·</span>
+        <a href="https://modernzen.co" style="color:var(--hw-color-ink-3);">modernzen.co</a>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;heroChannels&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:7,&quot;min&quot;:3,&quot;max&quot;:9,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Hero braid&quot;},&quot;humanMoment&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Hero braid&quot;}}">
+class Component extends DCLogic {
+  state = { theme: null, counts: [0, 0, 0, 0], started: false };
+  counterRef = React.createRef();
+  reduced = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  componentDidMount() {
+    const el = this.counterRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return this.animateCounts();
+    this.io = new IntersectionObserver((entries) => {
+      if (entries.some(e => e.isIntersecting)) { this.animateCounts(); this.io.disconnect(); }
+    }, { threshold: 0.4 });
+    this.io.observe(el);
+  }
+  componentWillUnmount() { this.io && this.io.disconnect(); cancelAnimationFrame(this.raf); }
+
+  animateCounts() {
+    if (this.state.started) return;
+    const targets = [9, 41, 3, 1];
+    if (this.reduced) return this.setState({ counts: targets, started: true });
+    this.setState({ started: true });
+    const t0 = performance.now(), dur = 1600;
+    const tick = (t) => {
+      const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      this.setState({ counts: targets.map(v => Math.round(v * e)) });
+      if (p < 1) this.raf = requestAnimationFrame(tick);
+    };
+    this.raf = requestAnimationFrame(tick);
+  }
+
+  braid(theme) {
+    const h = React.createElement;
+    const n = Math.max(3, Math.min(9, Number(this.props.heroChannels ?? 7)));
+    const human = this.props.humanMoment ?? true;
+    const r = this.reduced;
+    const W = 1200, cy = 180, x1 = 150, x2 = 380, x3 = 860, x4 = 1060;
+    const spread = 11 * (n - 1) + 8;
+    const agents = ['claude-code', 'codex', 'gemini', 'claude-code', 'devin', 'aider', 'claude-code', 'codex', 'gemini'];
+    const draw = 0.9;
+    const line = (key, d, w, delay, stroke, extraAnim) => h('path', {
+      key, d, fill: 'none', stroke, strokeWidth: w, strokeLinecap: 'round', pathLength: 1,
+      style: { strokeDasharray: 1, strokeDashoffset: r ? 0 : 1,
+        animation: r ? (extraAnim || 'none') : `hw-draw ${draw}s var(--hw-motion-ease-in-out) ${delay}s forwards` + (extraAnim ? ', ' + extraAnim : '') }
+    });
+    const els = [line('main-l', `M0 ${cy} H${x1}`, 2.5, 0, 'var(--hw-color-mainline)')];
+    const dots = [];
+    for (let i = 0; i < n; i++) {
+      const y = n === 1 ? cy : cy - spread + i * (2 * spread / (n - 1));
+      const drift = i % 2 ? 9 : -9, xm = (x2 + x3) / 2;
+      const d = `M${x1} ${cy} C${x1 + 110} ${cy} ${x2 - 110} ${y} ${x2} ${y} C${xm - 130} ${y} ${xm - 70} ${y + drift} ${xm} ${y + drift} C${xm + 70} ${y + drift} ${xm + 130} ${y} ${x3} ${y} C${x3 + 110} ${y} ${x4 - 110} ${cy} ${x4} ${cy}`;
+      const isHuman = human && i === Math.floor(n / 2);
+      const delay = 0.5 + i * 0.1;
+      els.push(line('ch' + i, d, 1.5, delay, 'var(--hw-color-channel)',
+        isHuman ? `hw-human 14s var(--hw-motion-ease-in-out) ${delay + draw + 2}s infinite` : null));
+      const label = `ch-${i + 1} · ${agents[i]}`;
+      const dotStyle = isHuman ? { animation: `hw-human-fill 14s var(--hw-motion-ease-in-out) ${delay + draw + 2}s infinite` } : {};
+      const glowStyle = { animation: `hw-pulse var(--hw-motion-pulse) var(--hw-motion-ease-in-out) ${i * 0.3}s infinite` };
+      const children = [
+        h('circle', { key: 'g', r: 9, fill: 'var(--hw-color-channel-glow)', style: glowStyle }),
+        h('circle', { key: 'd', r: 3.5, fill: 'var(--hw-color-channel)', style: dotStyle }),
+        h('text', { key: 't', x: 12, y: -8, fontFamily: 'var(--hw-font-mono)', fontSize: 11, fill: 'var(--hw-color-ink-3)' }, label)
+      ];
+      if (r) {
+        const sx = x2 + (x3 - x2) * (0.15 + 0.7 * (n === 1 ? 0.5 : i / (n - 1)));
+        dots.push(h('g', { key: 'dot' + i, transform: `translate(${sx} ${y})` }, children));
+      } else {
+        const begin = delay + draw;
+        dots.push(h('g', { key: 'dot' + i, style: { opacity: 0, animation: `hw-fade-in 0.6s var(--hw-motion-ease-out) ${begin}s forwards` } },
+          ...children,
+          h('animateMotion', { key: 'm', dur: `${13 + i * 1.3}s`, begin: `${begin}s`, repeatCount: 'indefinite', path: d, calcMode: 'spline', keyTimes: '0;1', keySplines: '0.45 0 0.55 1' })));
+      }
+    }
+    els.push(line('main-r', `M${x4} ${cy} H${W}`, 3.5, 0.5 + n * 0.1 + draw * 0.6, 'var(--hw-color-mainline)'));
+    return h('svg', { viewBox: `0 0 ${W} 360`, width: '100%', style: { display: 'block', overflow: 'visible', height: 'auto' }, 'aria-label': 'A single line splits into parallel channels and rejoins as a bolder mainline' }, ...els, ...dots);
+  }
+
+  renderVals() {
+    const theme = this.state.theme ?? this.props.theme ?? 'light';
+    const [c0, c1, c2, c3] = this.state.counts;
+    if (!this._braid || this._braidKey !== `${this.props.heroChannels}|${this.props.humanMoment}`) {
+      this._braidKey = `${this.props.heroChannels}|${this.props.humanMoment}`;
+      this._braid = this.braid(theme);
+    }
+    return {
+      theme, isDark: theme === 'dark', isLight: theme !== 'dark',
+      toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      braid: this._braid, counterRef: this.counterRef, c0, c1, c2, c3
+    };
+  }
+}
+</script>
+</body>
+</html>

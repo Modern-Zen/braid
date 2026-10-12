@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="headwaters-tokens.css">
+  <style>
+    body { margin: 0; background: #e7e5e4; }
+    a { color: var(--hw-color-channel); text-decoration: none; }
+    a:hover { color: var(--hw-color-channel-hover); }
+    * { box-sizing: border-box; }
+    button { font: inherit; }
+  </style>
+</helmet>
+<div data-hw-theme="{{ theme }}" data-screen-label="{{ screenLabel }}" style="position:relative; width:1440px; height:900px; display:grid; grid-template-columns:var(--hw-rail-width) minmax(0,1fr); grid-template-rows:var(--hw-topbar-height) minmax(0,1fr); overflow:hidden; background:var(--hw-color-paper); color:var(--hw-color-ink); font-family:var(--hw-font-ui); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;">
+
+  <!-- Left rail -->
+  <aside style="grid-row:1 / span 2; border-right:1px solid var(--hw-color-line); background:var(--hw-color-surface-2); display:flex; flex-direction:column; padding:16px 12px;">
+    <div style="display:flex; align-items:center; gap:10px; padding:4px 8px 20px;">
+      <svg width="26" height="18" viewBox="0 0 28 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M1 10 H6 C10 10 10 4 14 4 H27"></path><path d="M6 10 H27"></path><path d="M6 10 C10 10 10 16 14 16 H27"></path></svg>
+      <span style="font-family:var(--hw-font-display); font-size:17px; font-weight:500;">Headwaters</span>
+    </div>
+    <nav style="display:flex; flex-direction:column; gap:2px;">
+      <button onClick="{{ go.river }}" style="display:flex; align-items:center; gap:10px; width:100%; padding:9px 10px; border:0; border-radius:var(--hw-radius-md); cursor:pointer; text-align:left; font-size:13.5px; font-weight:500; background:{{ railBg.river }}; color:{{ railColor.river }};">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path></svg>
+        <span>Rivers</span>
+      </button>
+      <button onClick="{{ go.river }}" style="display:flex; align-items:center; gap:10px; width:100%; padding:9px 10px; border:0; border-radius:var(--hw-radius-md); cursor:pointer; text-align:left; font-size:13.5px; font-weight:500; background:transparent; color:var(--hw-color-ink-2);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><circle cx="18" cy="6" r="3"></circle><path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9"></path><path d="M12 12v3"></path></svg>
+        <span>Intents</span>
+      </button>
+      <button onClick="{{ go.scout }}" style="display:flex; align-items:center; gap:10px; width:100%; padding:9px 10px; border:0; border-radius:var(--hw-radius-md); cursor:pointer; text-align:left; font-size:13.5px; font-weight:500; background:{{ railBg.scout }}; color:{{ railColor.scout }};">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 3v18M15 3v18"></path></svg>
+        <span>Scout</span>
+      </button>
+      <button onClick="{{ go.eddy }}" style="display:flex; align-items:center; gap:10px; width:100%; padding:9px 10px; border:0; border-radius:var(--hw-radius-md); cursor:pointer; text-align:left; font-size:13.5px; font-weight:500; background:{{ railBg.eddy }}; color:{{ railColor.eddy }};">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="1.5" fill="currentColor"></circle></svg>
+        <span>Eddy</span>
+        <sc-if value="{{ hasDecisions }}" hint-placeholder-val="{{ true }}">
+          <span style="margin-left:auto; min-width:20px; height:20px; padding:0 6px; border-radius:var(--hw-radius-full); background:var(--hw-color-human); color:#fff; font-size:11px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; font-variant-numeric:tabular-nums;">{{ decisions }}</span>
+        </sc-if>
+      </button>
+      <button onClick="{{ go.logbook }}" style="display:flex; align-items:center; gap:10px; width:100%; padding:9px 10px; border:0; border-radius:var(--hw-radius-md); cursor:pointer; text-align:left; font-size:13.5px; font-weight:500; background:{{ railBg.logbook }}; color:{{ railColor.logbook }};">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg>
+        <span>Logbook</span>
+      </button>
+    </nav>
+    <div style="margin-top:auto; padding:12px 10px; border-top:1px solid var(--hw-color-line); display:flex; flex-direction:column; gap:6px;">
+      <div style="font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--hw-color-ink-4);">River</div>
+      <div style="font-family:var(--hw-font-display); font-size:15px;">riverlevels</div>
+      <div style="font-family:var(--hw-font-mono); font-size:11.5px; color:var(--hw-color-ink-3);">modern-zen / riverlevels</div>
+    </div>
+  </aside>
+
+  <!-- Top bar -->
+  <header style="display:flex; align-items:center; gap:16px; padding:0 32px; border-bottom:1px solid var(--hw-color-line); background:var(--hw-color-paper);">
+    <div style="font-family:var(--hw-font-display); font-size:18px; font-weight:500;">riverlevels</div>
+    <div style="font-family:var(--hw-font-mono); font-size:12px; color:var(--hw-color-ink-2); padding:4px 8px; border:1px solid var(--hw-color-line); border-radius:var(--hw-radius-sm); background:var(--hw-color-surface); white-space:nowrap;">main @ {{ mainHash }}</div>
+    <div style="margin-left:auto; display:flex; align-items:baseline; gap:10px; font-size:13px; color:var(--hw-color-ink-2); font-variant-numeric:tabular-nums; white-space:nowrap;">
+      <span>{{ agentCount }} agents</span><span style="color:var(--hw-color-ink-4);">·</span>
+      <span>{{ commitCount }} commits</span><span style="color:var(--hw-color-ink-4);">·</span>
+      <span>{{ previewCount }} previews</span><span style="color:var(--hw-color-ink-4);">·</span>
+      <span style="color:{{ decisionColor }}; font-weight:500;">{{ decisionLabel }}</span>
+    </div>
+    <button onClick="{{ toggleTheme }}" aria-label="Toggle theme" style="width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:var(--hw-radius-md); border:1px solid var(--hw-color-line); background:transparent; color:var(--hw-color-ink-3); cursor:pointer;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+    </button>
+  </header>
+
+  <!-- Content -->
+  <main style="position:relative; overflow:auto; min-height:0;">
+
+    <!-- Screen A · River -->
+    <sc-if value="{{ isRiver }}" hint-placeholder-val="{{ true }}">
+      <section data-screen-label="A · River" style="height:100%; display:grid; grid-template-columns:minmax(0,1fr) 320px;">
+        <div style="position:relative; padding:28px 32px; min-width:0; display:flex; flex-direction:column;">
+          <div style="display:flex; align-items:baseline; gap:12px;">
+            <h1 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:24px; letter-spacing:-0.01em;">River</h1>
+            <span style="font-size:13px; color:var(--hw-color-ink-3);">{{ riverSubtitle }}</span>
+          </div>
+          <sc-if value="{{ isRiverEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; position:relative;">
+              <svg viewBox="0 0 1000 40" width="100%" height="40" fill="none" stroke="var(--hw-color-mainline)" stroke-width="2" stroke-linecap="round" style="position:absolute; left:0; right:0; top:50%; margin-top:-20px; opacity:0.9;"><path d="M0 20 H1000"></path></svg>
+              <div style="position:relative; background:var(--hw-color-paper); padding:0 24px; display:flex; flex-direction:column; align-items:center; gap:14px;">
+                <div style="font-family:var(--hw-font-display); font-size:22px; color:var(--hw-color-ink-2);">A quiet river.</div>
+                <button style="font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; padding:13px 22px; border-radius:var(--hw-radius-md); border:0; background:var(--hw-color-ink); color:var(--hw-color-paper); cursor:pointer;">Open an Intent</button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ isRiverLive }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:1; margin-top:12px; min-height:0; display:flex; align-items:center;">{{ riverMap }}</div>
+          </sc-if>
+        </div>
+        <aside style="border-left:1px solid var(--hw-color-line); background:var(--hw-color-surface); display:flex; flex-direction:column; min-height:0;">
+          <div style="padding:20px 20px 12px; display:flex; align-items:center; gap:8px; font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--hw-color-ink-3);">
+            <span style="width:6px; height:6px; border-radius:50%; background:var(--hw-color-channel); display:inline-block;"></span>Live
+          </div>
+          <div style="overflow:auto; display:flex; flex-direction:column;">
+            <sc-for list="{{ feed }}" as="e" hint-placeholder-count="8">
+              <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 12px; padding:10px 20px; border-top:1px solid var(--hw-color-line); font-family:var(--hw-font-mono); font-size:11.5px; line-height:1.4;">
+                <span style="color:{{ e.color }}; font-weight:600;">{{ e.ev }}</span>
+                <span style="color:var(--hw-color-ink-4);">{{ e.t }}</span>
+                <span style="grid-column:1 / span 2; color:var(--hw-color-ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ e.detail }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </aside>
+      </section>
+    </sc-if>
+
+    <!-- Screen B · Scout -->
+    <sc-if value="{{ isScout }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="B · Scout" style="padding:28px 32px; display:flex; flex-direction:column; gap:20px;">
+        <div style="display:flex; align-items:baseline; gap:12px;">
+          <h1 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:24px; letter-spacing:-0.01em;">Scout</h1>
+          <span style="font-size:13px; color:var(--hw-color-ink-3);">Add a dark mode · 3 channels</span>
+        </div>
+
+        <!-- Verdict banner -->
+        <div style="border:1px solid {{ verdictBorder }}; background:{{ verdictBg }}; border-radius:var(--hw-radius-lg); padding:20px 24px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:24px; align-items:center;">
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; align-items:center; gap:10px; font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:{{ verdictLabelColor }};">
+              <span>{{ verdictLabel }}</span>
+              <sc-if value="{{ isScoutReady }}" hint-placeholder-val="{{ true }}">
+                <span style="display:inline-flex; gap:6px; font-family:var(--hw-font-mono); font-size:11.5px; letter-spacing:0; text-transform:none; font-weight:500; color:var(--hw-color-ink-2);">
+                  <span style="padding:2px 7px; border-radius:var(--hw-radius-xs); background:var(--hw-color-channel-soft); color:var(--hw-color-channel);">1 · ch-2</span>
+                  <span style="padding:2px 7px; border-radius:var(--hw-radius-xs); border:1px solid var(--hw-color-line);">{{ rank2 }}</span>
+                  <span style="padding:2px 7px; border-radius:var(--hw-radius-xs); border:1px solid var(--hw-color-line);">{{ rank3 }}</span>
+                </span>
+              </sc-if>
+            </div>
+            <p style="margin:0; font-family:var(--hw-font-display); font-size:17px; line-height:1.45; color:var(--hw-color-ink); max-width:760px; text-wrap:pretty;">{{ verdictText }}</p>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <sc-if value="{{ isScoutVerdict }}" hint-placeholder-val="{{ true }}">
+              <button style="font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; padding:13px 20px; border-radius:var(--hw-radius-md); border:0; background:var(--hw-color-ink); color:var(--hw-color-paper); cursor:pointer;">Pick ch-2</button>
+            </sc-if>
+            <sc-if value="{{ isScoutTie }}" hint-placeholder-val="{{ false }}">
+              <button style="font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; padding:13px 20px; border-radius:var(--hw-radius-md); border:0; background:var(--hw-color-human); color:#fff; cursor:pointer;">Pick ch-2</button>
+              <button style="font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; padding:13px 20px; border-radius:var(--hw-radius-md); border:1px solid var(--hw-color-human); background:transparent; color:var(--hw-color-human); cursor:pointer;">Pick ch-3</button>
+            </sc-if>
+            <sc-if value="{{ isScoutRunning }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:13px; color:var(--hw-color-ink-3);">Verdict in ~1m</span>
+            </sc-if>
+          </div>
+        </div>
+
+        <!-- Three channels -->
+        <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px;">
+          <sc-for list="{{ scoutChannels }}" as="c" hint-placeholder-count="3">
+            <article style="border:1px solid {{ c.border }}; background:var(--hw-color-surface); border-radius:var(--hw-radius-lg); overflow:hidden; display:flex; flex-direction:column;">
+              <div style="padding:14px 16px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--hw-color-line);">
+                <span style="width:8px; height:8px; border-radius:50%; background:var(--hw-color-channel); display:inline-block; box-shadow:0 0 0 3px var(--hw-color-channel-glow);"></span>
+                <span style="font-family:var(--hw-font-mono); font-size:12px; color:var(--hw-color-ink);">{{ c.id }}</span>
+                <span style="font-family:var(--hw-font-mono); font-size:12px; color:var(--hw-color-ink-3);">· {{ c.agent }} · {{ c.strategy }}</span>
+                <span style="margin-left:auto; font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:{{ c.rankColor }};">{{ c.rankLabel }}</span>
+              </div>
+              <!-- Preview -->
+              <sc-if value="{{ c.skeleton }}" hint-placeholder-val="{{ false }}">
+                <div style="aspect-ratio:16/10; background:var(--hw-color-surface-2); padding:16px; display:flex; flex-direction:column; gap:10px;">
+                  <div style="height:12px; width:46%; border-radius:4px; background:var(--hw-color-line); animation:hw-pulse var(--hw-motion-pulse) var(--hw-motion-ease-in-out) infinite;"></div>
+                  <div style="height:8px; width:70%; border-radius:4px; background:var(--hw-color-line); animation:hw-pulse var(--hw-motion-pulse) var(--hw-motion-ease-in-out) 0.3s infinite;"></div>
+                  <div style="height:8px; width:62%; border-radius:4px; background:var(--hw-color-line); animation:hw-pulse var(--hw-motion-pulse) var(--hw-motion-ease-in-out) 0.6s infinite;"></div>
+                  <div style="height:8px; width:76%; border-radius:4px; background:var(--hw-color-line); animation:hw-pulse var(--hw-motion-pulse) var(--hw-motion-ease-in-out) 0.9s infinite;"></div>
+                  <div style="margin-top:auto; font-family:var(--hw-font-mono); font-size:11px; color:var(--hw-color-ink-4);">{{ c.status }}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ c.preview }}" hint-placeholder-val="{{ true }}">
+                <div style="aspect-ratio:16/10; background:{{ c.pvBg }}; color:{{ c.pvFg }}; padding:18px 20px; display:flex; flex-direction:column; gap:12px; font-family:var(--hw-font-ui);">
+                  <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                    <div style="font-family:var(--hw-font-display); font-size:15px;">River levels</div>
+                    <div style="font-size:10px; color:{{ c.pvMuted }};">Snake River · Moose, WY</div>
+                  </div>
+                  <div style="display:grid; grid-template-columns:70px 1fr 40px; gap:8px 10px; align-items:center; font-size:10.5px;">
+                    <span style="color:{{ c.pvMuted }};">Stage</span><div style="height:6px; border-radius:3px; background:{{ c.pvTrack }};"><div style="height:6px; width:62%; border-radius:3px; background:{{ c.pvBar }};"></div></div><span style="text-align:right; font-variant-numeric:tabular-nums;">6.2 ft</span>
+                    <span style="color:{{ c.pvMuted }};">Flow</span><div style="height:6px; border-radius:3px; background:{{ c.pvTrack }};"><div style="height:6px; width:48%; border-radius:3px; background:{{ c.pvBar }};"></div></div><span style="text-align:right; font-variant-numeric:tabular-nums;">4,810</span>
+                    <span style="color:{{ c.pvMuted }};">Temp</span><div style="height:6px; border-radius:3px; background:{{ c.pvTrack }};"><div style="height:6px; width:35%; border-radius:3px; background:{{ c.pvBar }};"></div></div><span style="text-align:right; font-variant-numeric:tabular-nums;">51°F</span>
+                  </div>
+                  <div style="margin-top:auto; font-size:10px; color:{{ c.pvMuted }};">{{ c.pvNote }}</div>
+                </div>
+              </sc-if>
+              <!-- Status row -->
+              <div style="padding:14px 16px; display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; font-size:12.5px; border-top:1px solid var(--hw-color-line);">
+                <div style="display:flex; flex-direction:column; gap:2px;"><span style="font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--hw-color-ink-4);">Tests</span><span style="font-family:var(--hw-font-mono); color:{{ c.testsColor }};">{{ c.tests }}</span></div>
+                <div style="display:flex; flex-direction:column; gap:2px;"><span style="font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--hw-color-ink-4);">Diff</span><span style="font-family:var(--hw-font-mono); color:var(--hw-color-ink-2);">{{ c.diff }}</span></div>
+                <div style="display:flex; flex-direction:column; gap:2px;"><span style="font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--hw-color-ink-4);">Cost · time</span><span style="font-family:var(--hw-font-mono); color:var(--hw-color-ink-2);">{{ c.cost }}</span></div>
+                <div style="display:flex; flex-direction:column; gap:2px;"><span style="font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--hw-color-ink-4);">Risk</span>
+                  <span style="display:inline-flex; align-items:center; gap:8px;">
+                    <svg width="36" height="20" viewBox="0 0 36 20" fill="none" stroke-linecap="round"><path d="M3 18 A15 15 0 0 1 33 18" stroke="var(--hw-color-line)" stroke-width="3"></path><path d="M3 18 A15 15 0 0 1 33 18" stroke="{{ c.riskColor }}" stroke-width="3" pathLength="1" stroke-dasharray="{{ c.riskDash }}"></path></svg>
+                    <span style="font-family:var(--hw-font-mono); color:var(--hw-color-ink-2);">{{ c.risk }}</span>
+                  </span>
+                </div>
+              </div>
+              <div style="padding:0 16px 14px; display:flex; gap:6px; flex-wrap:wrap;">
+                <button style="font-size:12px; padding:7px 12px; border-radius:var(--hw-radius-sm); border:1px solid var(--hw-color-line-strong); background:transparent; color:var(--hw-color-ink); cursor:pointer;">Open preview</button>
+                <button style="font-size:12px; padding:7px 12px; border-radius:var(--hw-radius-sm); border:1px solid var(--hw-color-line-strong); background:transparent; color:var(--hw-color-ink); cursor:pointer;">View diff</button>
+                <button style="font-size:12px; padding:7px 12px; border-radius:var(--hw-radius-sm); border:1px solid transparent; background:transparent; color:var(--hw-color-ink-3); cursor:pointer;">Replay from commit…</button>
+              </div>
+            </article>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- Screen C · Eddy -->
+    <sc-if value="{{ isEddy }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="C · Eddy" style="min-height:100%; padding:64px 32px 48px; display:flex; flex-direction:column; align-items:center; gap:40px;">
+        <div style="text-align:center; display:flex; flex-direction:column; gap:12px;">
+          <div style="font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--hw-color-ink-3);">Eddy</div>
+          <div style="font-family:var(--hw-font-display); font-weight:500; font-size:40px; line-height:1.15; letter-spacing:-0.02em; font-variant-numeric:tabular-nums;">{{ agentCount }} agents <span style="color:var(--hw-color-ink-4);">·</span> {{ commitCount }} commits <span style="color:var(--hw-color-ink-4);">·</span> <span style="color:{{ decisionColor }};">{{ decisionLabel }}.</span></div>
+        </div>
+
+        <sc-if value="{{ isEddyZero }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%; max-width:760px; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px; min-height:360px;">
+            <svg viewBox="0 0 760 24" width="100%" height="24" fill="none" stroke="var(--hw-color-mainline)" stroke-width="1.5" stroke-linecap="round"><path d="M0 12 C120 12 160 10 260 10 S420 14 520 14 S680 12 760 12"></path></svg>
+            <div style="font-family:var(--hw-font-display); font-size:22px; color:var(--hw-color-ink-2); text-align:center;">Nothing needs you. The river is running.</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isEddyInbox }}" hint-placeholder-val="{{ true }}">
+          <div style="width:100%; max-width:760px; display:flex; flex-direction:column; gap:16px;">
+            <sc-for list="{{ decisionCards }}" as="d" hint-placeholder-count="1">
+              <article style="border:1px solid var(--hw-color-line); border-left:none; background:var(--hw-color-surface); border-radius:var(--hw-radius-lg); box-shadow:var(--hw-shadow-sm); padding:24px 28px; display:grid; grid-template-columns:4px minmax(0,1fr); gap:0 22px; position:relative; overflow:hidden;">
+                <span style="position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--hw-color-human);"></span>
+                <span></span>
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                  <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;">
+                    <h2 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:22px; letter-spacing:-0.01em;">{{ d.q }}</h2>
+                    <span style="font-family:var(--hw-font-mono); font-size:11.5px; color:var(--hw-color-ink-3);">{{ d.meta }}</span>
+                  </div>
+                  <p style="margin:0; color:var(--hw-color-ink-2); line-height:1.6; text-wrap:pretty;">{{ d.context }}</p>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+                    <button style="font-size:11px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; padding:12px 18px; border-radius:var(--hw-radius-md); border:0; background:var(--hw-color-ink); color:var(--hw-color-paper); cursor:pointer;">{{ d.primary }}</button>
+                    <sc-if value="{{ d.secondary }}" hint-placeholder-val="{{ true }}">
+                      <button style="font-size:11px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; padding:12px 18px; border-radius:var(--hw-radius-md); border:1px solid var(--hw-color-line-strong); background:transparent; color:var(--hw-color-ink); cursor:pointer;">{{ d.secondary }}</button>
+                    </sc-if>
+                    <sc-if value="{{ d.tertiary }}" hint-placeholder-val="{{ false }}">
+                      <button style="font-size:11px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; padding:12px 18px; border-radius:var(--hw-radius-md); border:0; background:transparent; color:var(--hw-color-ink-3); cursor:pointer;">{{ d.tertiary }}</button>
+                    </sc-if>
+                  </div>
+                </div>
+              </article>
+            </sc-for>
+            <div style="display:flex; justify-content:center; gap:8px; padding:20px 0 0; font-size:13px; color:var(--hw-color-ink-3);">
+              <span>{{ autoCount }} changes merged automatically.</span>
+              <a href="#" style="color:var(--hw-color-ink-2);">Review log →</a>
+            </div>
+          </div>
+        </sc-if>
+      </section>
+    </sc-if>
+
+    <!-- Screen D · Logbook -->
+    <sc-if value="{{ isLogbook }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="D · Logbook" style="padding:28px 32px 40px; display:flex; flex-direction:column; gap:20px;">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <h1 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:24px; letter-spacing:-0.01em;">Logbook</h1>
+          <div style="margin-left:auto; width:520px; display:flex; align-items:center; gap:10px; padding:9px 14px; border:1px solid var(--hw-color-line-strong); border-radius:var(--hw-radius-md); background:var(--hw-color-surface); color:var(--hw-color-ink);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+            <span style="font-size:11px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--hw-color-ink-4); white-space:nowrap;">Ask the river</span>
+            <span style="font-size:13.5px; color:var(--hw-color-ink);">Why does /api rate-limit at 10 req/s?</span>
+          </div>
+        </div>
+
+        <!-- Search result -->
+        <div style="margin-left:auto; width:520px; border:1px solid var(--hw-color-line); background:var(--hw-color-surface); border-radius:var(--hw-radius-lg); padding:16px 18px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--hw-shadow-md);">
+          <div style="display:flex; gap:10px; align-items:baseline; font-family:var(--hw-font-mono); font-size:12px;">
+            <a href="#" style="font-weight:600;">a41c3f7</a><span style="color:var(--hw-color-ink-3);">ch-5 · codex · Add rate limiting to /api</span>
+          </div>
+          <blockquote style="margin:0; padding-left:12px; border-left:2px solid var(--hw-color-channel); font-family:var(--hw-font-display); font-size:14.5px; line-height:1.5; color:var(--hw-color-ink-2);">10 req/s per token: the gauge dashboard polls at 1 req/s per widget and ships at most 6 widgets. 10 leaves headroom without inviting scraping.</blockquote>
+          <div style="font-size:12px; color:var(--hw-color-ink-4);">From Decisions · Logbook entry 0012</div>
+        </div>
+
+        <!-- Commit header -->
+        <div style="border:1px solid var(--hw-color-line); background:var(--hw-color-surface); border-radius:var(--hw-radius-lg); padding:20px 24px; display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;">
+            <span style="font-family:var(--hw-font-mono); font-size:16px; font-weight:600;">a41c3f7</span>
+            <span style="font-family:var(--hw-font-display); font-size:18px;">Add token-bucket rate limiting to /api</span>
+            <span style="margin-left:auto; font-size:12.5px; color:var(--hw-color-ink-3);">ch-5 · codex · conservative · Add rate limiting to /api · 12 min ago</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <sc-for list="{{ trailers }}" as="tr" hint-placeholder-count="5">
+              <span style="font-family:var(--hw-font-mono); font-size:11.5px; padding:3px 8px; border-radius:var(--hw-radius-xs); border:1px solid var(--hw-color-line); color:var(--hw-color-ink-2); background:var(--hw-color-paper);"><span style="color:var(--hw-color-ink-4);">{{ tr.k }}:</span> {{ tr.v }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Split -->
+        <div style="display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:16px; align-items:start;">
+          <div style="border:1px solid var(--hw-color-line); background:var(--hw-color-surface); border-radius:var(--hw-radius-lg); overflow:hidden;">
+            <div style="padding:10px 16px; border-bottom:1px solid var(--hw-color-line); display:flex; gap:12px; font-family:var(--hw-font-mono); font-size:12px;">
+              <span style="color:var(--hw-color-ink);">src/api/middleware/rateLimit.ts</span>
+              <span style="color:var(--hw-color-merged);">+18</span><span style="color:var(--hw-color-conflict);">−1</span>
+            </div>
+            <div style="font-family:var(--hw-font-mono); font-size:12px; line-height:1.75; padding:8px 0;">
+              <sc-for list="{{ diffLines }}" as="l" hint-placeholder-count="12">
+                <div style="display:grid; grid-template-columns:40px 16px minmax(0,1fr); background:{{ l.bg }}; color:{{ l.color }};">
+                  <span style="text-align:right; padding-right:10px; color:var(--hw-color-ink-4);">{{ l.n }}</span>
+                  <span>{{ l.sign }}</span>
+                  <span style="white-space:pre;">{{ l.text }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="border:1px solid var(--hw-color-line); background:var(--hw-color-surface); border-radius:var(--hw-radius-lg); padding:24px 28px; display:flex; flex-direction:column; gap:20px;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between;">
+              <div style="font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--hw-color-channel);">Logbook · 0012</div>
+              <a href="#" style="font-size:12.5px;">Full transcript →</a>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <h3 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:17px;">Plan</h3>
+              <p style="margin:0; color:var(--hw-color-ink-2); line-height:1.6; text-wrap:pretty;">Add a token-bucket limiter in front of /api. Keep the bucket in a Durable Object so limits hold across isolates.</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <h3 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:17px;">Decisions</h3>
+              <p style="margin:0; color:var(--hw-color-ink-2); line-height:1.6; text-wrap:pretty;">10 req/s per token: the gauge dashboard polls at 1 req/s per widget and ships at most 6 widgets. 10 leaves headroom without inviting scraping.</p>
+              <p style="margin:0; color:var(--hw-color-ink-2); line-height:1.6; text-wrap:pretty;">Return 429 with <span style="font-family:var(--hw-font-mono); font-size:12px;">retryAfter</span> rather than queueing. Callers are agents; they back off correctly.</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <h3 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:17px;">Rejected approaches</h3>
+              <p style="margin:0; color:var(--hw-color-ink-2); line-height:1.6; text-wrap:pretty;">In-memory map per isolate: limits reset on cold start. Cloudflare Rate Limiting rules: not versioned with the code.</p>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <h3 style="margin:0; font-family:var(--hw-font-display); font-weight:500; font-size:17px;">Model and cost</h3>
+              <p style="margin:0; font-family:var(--hw-font-mono); font-size:12.5px; color:var(--hw-color-ink-2);">gpt-5-codex · conservative · 3 turns · $0.27 · 2m48s</p>
+            </div>
+            <div style="border-top:1px solid var(--hw-color-line); padding-top:18px; display:flex; flex-direction:column; gap:10px;">
+              <div style="font-size:11px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--hw-color-ink-3);">Replay from here</div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <span style="display:inline-flex; align-items:center; gap:8px; font-size:12.5px; padding:8px 12px; border:1px solid var(--hw-color-line-strong); border-radius:var(--hw-radius-sm); background:var(--hw-color-paper);">claude-code <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"></path></svg></span>
+                <span style="display:inline-flex; align-items:center; gap:8px; font-size:12.5px; padding:8px 12px; border:1px solid var(--hw-color-line-strong); border-radius:var(--hw-radius-sm); background:var(--hw-color-paper);">minimal-diff <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"></path></svg></span>
+                <button style="font-size:11px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; padding:11px 16px; border-radius:var(--hw-radius-md); border:0; background:var(--hw-color-ink); color:var(--hw-color-paper); cursor:pointer;">Fork ch-10</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+  </main>
+
+  <!-- Demo state switcher -->
+  <sc-if value="{{ showStateBar }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute; left:50%; bottom:16px; transform:translateX(-50%); display:flex; align-items:center; gap:2px; padding:4px; border-radius:var(--hw-radius-full); background:var(--hw-color-ink); color:var(--hw-color-paper); box-shadow:var(--hw-shadow-lg); font-size:12px;">
+      <span style="padding:0 10px 0 12px; font-size:10.5px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; opacity:0.6;">State</span>
+      <sc-for list="{{ stateOptions }}" as="o" hint-placeholder-count="3">
+        <button onClick="{{ o.pick }}" style="padding:6px 12px; border-radius:var(--hw-radius-full); border:0; cursor:pointer; font-size:12px; background:{{ o.bg }}; color:{{ o.color }};">{{ o.label }}</button>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;river&quot;,&quot;scout&quot;,&quot;eddy&quot;,&quot;logbook&quot;],&quot;default&quot;:&quot;river&quot;,&quot;tsType&quot;:&quot;'river' | 'scout' | 'eddy' | 'logbook'&quot;,&quot;section&quot;:&quot;Screen&quot;},&quot;riverState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;empty&quot;,&quot;running&quot;,&quot;overlap&quot;,&quot;merged&quot;],&quot;default&quot;:&quot;running&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;States&quot;},&quot;scoutState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;running&quot;,&quot;verdict&quot;,&quot;tie&quot;],&quot;default&quot;:&quot;verdict&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;States&quot;},&quot;eddyState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;three&quot;,&quot;one&quot;,&quot;zero&quot;],&quot;default&quot;:&quot;one&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;States&quot;},&quot;showStateBar&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Demo&quot;}}">
+const INTENTS = [
+  { title: 'Add a dark mode', fork: 80, ys: [70, 115, 160], chans: [
+    { id: 'ch-1', agent: 'codex', strategy: 'tests-first', p: 0.55, status: 'editing 3 files', commits: [0.2, 0.4] },
+    { id: 'ch-2', agent: 'claude-code', strategy: 'minimal-diff', p: 0.7, status: 'pushed a41c…', commits: [0.2, 0.45, 0.65] },
+    { id: 'ch-3', agent: 'gemini', strategy: 'rewrite', p: 0.62, status: 'tests ✓', commits: [0.3, 0.55] } ] },
+  { title: 'Add rate limiting to /api', fork: 120, ys: [230, 275, 320], chans: [
+    { id: 'ch-4', agent: 'claude-code', strategy: 'conservative', p: 0.4, status: 'planning', commits: [] },
+    { id: 'ch-5', agent: 'codex', strategy: 'conservative', p: 0.75, status: 'tests ✓', commits: [0.25, 0.5, 0.7] },
+    { id: 'ch-6', agent: 'aider', strategy: 'bold', p: 0.3, status: 'cloning', commits: [] } ] },
+  { title: 'Refactor the gauge component', fork: 160, ys: [470, 515, 560], chans: [
+    { id: 'ch-7', agent: 'claude-code', strategy: 'minimal-diff', p: 0.66, status: 'editing 5 files', commits: [0.2, 0.5] },
+    { id: 'ch-8', agent: 'gemini', strategy: 'tests-first', p: 0.5, status: 'planning', commits: [0.3] },
+    { id: 'ch-9', agent: 'devin', strategy: 'rewrite', p: 0.58, status: 'pushed 7be0…', commits: [0.2, 0.4, 0.55] } ] }
+];
+const C = { ch: 'var(--hw-color-channel)', conflict: 'var(--hw-color-conflict)', merged: 'var(--hw-color-merged)', ink3: 'var(--hw-color-ink-3)', human: 'var(--hw-color-human)' };
+const FEED_RUN = [
+  ['repo.pushed', 'ch-2 → a41c3f7 · 4 files', '12s', C.ch],
+  ['line.declared', 'ch-7 · src/components/Gauge.tsx, src/hooks/useGauge.ts', '40s', C.ch],
+  ['review.passed', 'ch-5 · tests 14/14 · risk 0.72', '1m', C.merged],
+  ['repo.pushed', 'ch-9 → 7be04d2 · 9 files', '2m', C.ch],
+  ['repo.forked', 'ch-6 · river-riverlevels--ch-6', '3m', C.ink3],
+  ['line.declared', 'ch-2 · src/theme/*, src/components/Gauge.tsx', '4m', C.ch],
+  ['repo.forked', 'ch-4 · river-riverlevels--ch-4', '5m', C.ink3],
+  ['preview.ready', 'ch-3 · https://ch-3.riverlevels.preview', '6m', C.ch],
+  ['intent.opened', 'Refactor the gauge component · 3 channels', '8m', C.ink3],
+  ['intent.opened', 'Add rate limiting to /api · 3 channels', '8m', C.ink3],
+  ['intent.opened', 'Add a dark mode · 3 channels', '9m', C.ink3]
+];
+const FEED_OVERLAP = [['line.conflict', 'ch-2 ↔ ch-7 · src/components/Gauge.tsx', 'now', C.conflict], ...FEED_RUN];
+const FEED_MERGED = [
+  ['river.merged', 'main @ 9c3e1f0 · 3 intents', 'now', C.merged],
+  ['confluence.picked', 'ch-2 · Add a dark mode · by you', '1m', C.human],
+  ['confluence.picked', 'ch-5 · Add rate limiting to /api · auto', '2m', C.merged],
+  ['confluence.picked', 'ch-7 · Refactor the gauge component · auto', '2m', C.merged],
+  ['review.passed', 'ch-7 · tests 22/22 · risk 0.21', '4m', C.merged],
+  ['review.passed', 'ch-2 · tests 14/14 · risk 0.18', '6m', C.merged],
+  ...FEED_RUN.slice(0, 5)
+];
+const FEED_EMPTY = [['river.created', 'riverlevels · main @ 4f2a9c1', '2m', C.ink3], ['token.issued', 'owner · scope: river', '2m', C.ink3]];
+const SCOUT = [
+  { id: 'ch-1', agent: 'codex', strategy: 'tests-first', tests: '12/14', fail: true, diff: '+64 −9 · 6 files', cost: '$0.22 · 2m40s', risk: 0.31, rank: 3, dark: false, note: 'Two contrast checks failed on the gauge labels.' },
+  { id: 'ch-2', agent: 'claude-code', strategy: 'minimal-diff', tests: '14/14', diff: '+82 −11 · 4 files', cost: '$0.31 · 3m12s', risk: 0.18, rank: 1, dark: true, note: 'Theme tokens; respects prefers-color-scheme.' },
+  { id: 'ch-3', agent: 'gemini', strategy: 'rewrite', tests: '14/14', diff: '+140 −32 · 9 files', cost: '$0.48 · 4m05s', risk: 0.44, rank: 2, dark: true, note: 'Hard-coded palette in six components.' }
+];
+const DIFF = [
+  ['1', ' ', 'import { Hono } from "hono";'], ['2', '+', 'import { RateLimiter } from "./limiter";'], ['3', '+', ''],
+  ['4', '+', 'const LIMIT = 10; // req/s per token'], ['5', '+', 'const limiter = new RateLimiter({ limit: LIMIT, window: 1_000 });'],
+  ['6', ' ', ''], ['7', ' ', 'export const api = new Hono();'], ['8', '+', ''],
+  ['9', '+', 'api.use("*", async (c, next) => {'], ['10', '+', '  const key = c.req.header("authorization")'], ['11', '+', '    ?? c.req.header("cf-connecting-ip");'],
+  ['12', '+', '  if (!(await limiter.take(key))) {'], ['13', '+', '    return c.json({ error: "rate_limited", retryAfter: 1 }, 429);'],
+  ['14', '+', '  }'], ['15', '+', '  await next();'], ['16', '+', '});'], ['17', ' ', ''],
+  ['18', '-', 'api.get("/levels", levels);'], ['18', '+', 'api.get("/levels", cache(60), levels);']
+];
+const CARDS = {
+  pick: { q: 'Pick a dark mode', meta: 'Add a dark mode · ch-2 vs ch-3', context: 'Scout called a tie. ch-2 adds a theme-token layer across 4 files and passes all 14 tests. ch-3 rewrites 9 components with a hard-coded palette and also passes. Both previews are attached.', primary: 'Pick ch-2', secondary: 'Pick ch-3', tertiary: 'Open Scout' },
+  api: { q: 'Approve a high-risk change to /api', meta: 'Add rate limiting · ch-5 · risk 0.72', context: 'Adds a Durable Object–backed token bucket at 10 req/s per token and returns 429 on overflow. Touches the public API surface; tests 14/14. The Logbook explains the limit.', primary: 'Approve', secondary: 'Ask for changes', tertiary: null },
+  merge: { q: 'Confirm merge resolution', meta: 'ch-7 ↔ ch-2 · src/components/Gauge.tsx', context: 'Both channels touched Gauge.tsx. Headwaters kept ch-2\u2019s theme props and ch-7\u2019s extracted hook; the combined build passes 22/22. Confirm, or open the diff.', primary: 'Confirm', secondary: 'View diff', tertiary: null }
+};
+
+class Component extends DCLogic {
+  state = { theme: null, screen: null, river: null, scout: null, eddy: null };
+  reduced = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  riverMap(mode) {
+    const h = React.createElement, r = this.reduced;
+    const W = 1000, H = 620, my = 400, xEnd = 880;
+    const merged = mode === 'merged', overlap = mode === 'overlap';
+    const els = [];
+    const anim = (delay) => r ? {} : { strokeDasharray: 1, strokeDashoffset: 1, animation: `hw-draw var(--hw-motion-draw) var(--hw-motion-ease-in-out) ${delay}s forwards` };
+    els.push(h('path', { key: 'main', d: `M0 ${my} H${W}`, fill: 'none', stroke: 'var(--hw-color-mainline)', strokeWidth: merged ? 2 : 2.5, strokeLinecap: 'round' }));
+    if (merged) els.push(h('path', { key: 'main2', d: `M${xEnd} ${my} H${W}`, fill: 'none', stroke: 'var(--hw-color-mainline)', strokeWidth: 4, strokeLinecap: 'round', pathLength: 1, style: anim(1.6) }));
+    let k = 0;
+    const pos = {};
+    INTENTS.forEach((it, ii) => {
+      const fx = it.fork, x0 = fx + 150;
+      const labelY = it.ys[0] - 18;
+      els.push(h('text', { key: 'il' + ii, x: x0, y: ii === 2 ? it.ys[0] - 20 : labelY, fontFamily: 'var(--hw-font-display)', fontStyle: 'italic', fontSize: 13.5, fill: 'var(--hw-color-ink-3)' }, it.title));
+      it.chans.forEach((c, ci) => {
+        const y = it.ys[ci];
+        const runEnd = merged ? 760 : x0 + (xEnd - x0) * c.p;
+        let d = `M${fx} ${my} C${fx + 70} ${my} ${x0 - 70} ${y} ${x0} ${y} H${runEnd}`;
+        if (merged) d += ` C${runEnd + 60} ${y} ${xEnd - 60} ${my} ${xEnd} ${my}`;
+        const stroke = merged ? 'var(--hw-color-ink-4)' : C.ch;
+        const delay = 0.15 + k * 0.08;
+        els.push(h('path', { key: 'c' + k, d, fill: 'none', stroke, strokeWidth: 1.5, strokeLinecap: 'round', pathLength: 1, style: anim(delay) }));
+        c.commits.forEach((f, j) => els.push(h('circle', { key: `d${k}-${j}`, cx: x0 + (xEnd - x0) * f, cy: y, r: 3, fill: stroke, style: r ? {} : { opacity: 0, animation: `hw-fade-in 0.4s var(--hw-motion-ease-out) ${delay + 0.9 * f}s forwards` } })));
+        pos[c.id] = { x0, y };
+        if (!merged) {
+          const label = `${c.id} · ${c.agent} · ${c.strategy}`;
+          const w = label.length * 6.7 + 16;
+          els.push(h('g', { key: 'chip' + k, transform: `translate(${runEnd + 10} ${y - 11})`, style: r ? {} : { opacity: 0, animation: `hw-fade-in 0.5s var(--hw-motion-ease-out) ${delay + 0.9}s forwards` } },
+            h('circle', { cx: -10, cy: 11, r: 7, fill: 'var(--hw-color-channel-glow)', style: { animation: `hw-pulse var(--hw-motion-pulse) var(--hw-motion-ease-in-out) ${k * 0.25}s infinite` } }),
+            h('circle', { cx: -10, cy: 11, r: 3.5, fill: C.ch }),
+            h('rect', { width: w, height: 22, rx: 4, fill: 'var(--hw-color-surface)', stroke: 'var(--hw-color-line)' }),
+            h('text', { x: 8, y: 15, fontFamily: 'var(--hw-font-mono)', fontSize: 11, fill: 'var(--hw-color-ink)' }, label),
+            h('text', { x: 0, y: 38, fontFamily: 'var(--hw-font-mono)', fontSize: 11, fill: c.status.includes('✓') ? C.merged : 'var(--hw-color-ink-3)' }, c.status)));
+        }
+        k++;
+      });
+    });
+    if (merged) els.push(h('text', { key: 'mt', x: xEnd + 12, y: my - 14, fontFamily: 'var(--hw-font-mono)', fontSize: 12, fill: 'var(--hw-color-ink)' }, 'main @ 9c3e1f0'),
+      h('text', { key: 'mt2', x: xEnd + 12, y: my + 24, fontFamily: 'var(--hw-font-ui)', fontSize: 12, fill: 'var(--hw-color-ink-3)' }, '3 intents merged'),
+      h('text', { key: 'mt3', x: xEnd + 12, y: my + 42, fontFamily: 'var(--hw-font-ui)', fontSize: 12, fill: 'var(--hw-color-ink-3)' }, '1 decision was yours'));
+    if (overlap) {
+      const sx = 560, a = pos['ch-2'], b = pos['ch-7'];
+      els.push(h('path', { key: 'shoal-l', d: `M${sx} ${a.y} V${b.y}`, stroke: C.conflict, strokeWidth: 1, strokeDasharray: '3 4', opacity: 0.55, style: { animation: 'hw-fade-in 0.6s var(--hw-motion-ease-out) 1.2s both' } }));
+      [a, b].forEach((p, i) => els.push(h('ellipse', { key: 'shoal' + i, cx: sx, cy: p.y, rx: 16, ry: 6, fill: 'var(--hw-color-conflict-soft)', stroke: C.conflict, strokeWidth: 1, style: { animation: 'hw-fade-in 0.6s var(--hw-motion-ease-out) 1.2s both' } })));
+      els.push(h('g', { key: 'tip', transform: `translate(${sx + 18} ${my + 8})`, style: { animation: 'hw-fade-in 0.6s var(--hw-motion-ease-out) 1.6s both' } },
+        h('rect', { width: 356, height: 48, rx: 6, fill: 'var(--hw-color-surface)', stroke: C.conflict }),
+        h('text', { x: 14, y: 19, fontFamily: 'var(--hw-font-ui)', fontSize: 12.5, fill: 'var(--hw-color-ink)' }, 'ch-2 (dark mode) and ch-7 (refactor) both claim'),
+        h('text', { x: 14, y: 37, fontFamily: 'var(--hw-font-mono)', fontSize: 12, fill: C.conflict }, 'src/components/Gauge.tsx')));
+    }
+    return h('svg', { viewBox: `0 0 ${W} ${H}`, width: '100%', style: { display: 'block', overflow: 'visible', maxHeight: '100%' } }, ...els);
+  }
+
+  renderVals() {
+    const theme = this.state.theme ?? this.props.theme ?? 'light';
+    const screen = this.state.screen ?? this.props.screen ?? 'river';
+    const river = this.state.river ?? this.props.riverState ?? 'running';
+    const scout = this.state.scout ?? this.props.scoutState ?? 'verdict';
+    const eddy = this.state.eddy ?? this.props.eddyState ?? 'one';
+    const set = (k, v) => () => this.setState({ [k]: v });
+    const active = 'var(--hw-color-ink)', idle = 'var(--hw-color-ink-2)';
+    const railBg = {}, railColor = {};
+    ['river', 'scout', 'eddy', 'logbook'].forEach(s => { railBg[s] = screen === s ? 'var(--hw-color-surface)' : 'transparent'; railColor[s] = screen === s ? active : idle; });
+    const decisions = eddy === 'zero' ? 0 : eddy === 'three' ? 3 : (river === 'merged' ? 0 : 1);
+    const merged = river === 'merged' && screen === 'river';
+    const key = `${river}`;
+    if (this._mapKey !== key) { this._mapKey = key; this._map = this.riverMap(river); }
+    const stateSets = {
+      river: [['empty', 'Empty'], ['running', '9 running'], ['overlap', 'Overlap'], ['merged', 'All merged']].map(([v, l]) => ({ v, l, k: 'river', cur: river })),
+      scout: [['running', 'Still running'], ['verdict', 'Verdict ready'], ['tie', 'Tie · human']].map(([v, l]) => ({ v, l, k: 'scout', cur: scout })),
+      eddy: [['three', '3 decisions'], ['one', '1 decision'], ['zero', 'Inbox zero']].map(([v, l]) => ({ v, l, k: 'eddy', cur: eddy })),
+      logbook: []
+    };
+    const stateOptions = stateSets[screen].map(o => ({ label: o.l, pick: set(o.k, o.v), bg: o.cur === o.v ? 'var(--hw-color-paper)' : 'transparent', color: o.cur === o.v ? 'var(--hw-color-ink)' : 'var(--hw-color-paper)' }));
+    const feedSrc = river === 'empty' ? FEED_EMPTY : river === 'overlap' ? FEED_OVERLAP : river === 'merged' ? FEED_MERGED : FEED_RUN;
+    const feed = feedSrc.map(([ev, detail, t, color]) => ({ ev, detail, t, color }));
+    const isLightPv = theme !== 'dark';
+    const scoutChannels = SCOUT.map(c => {
+      const running = scout === 'running', tie = scout === 'tie';
+      const rank = tie ? (c.rank === 3 ? 3 : 1) : c.rank;
+      const top = !running && rank === 1;
+      const riskColor = c.risk >= 0.6 ? C.human : c.risk >= 0.4 ? 'var(--hw-color-ink-3)' : C.ch;
+      return {
+        id: c.id, agent: c.agent, strategy: c.strategy,
+        border: top ? (tie ? C.human : C.ch) : 'var(--hw-color-line)',
+        rankLabel: running ? 'running' : tie && rank === 1 ? 'tied' : `#${rank}`,
+        rankColor: running ? 'var(--hw-color-ink-4)' : top ? (tie ? C.human : C.ch) : 'var(--hw-color-ink-3)',
+        skeleton: running, preview: !running, status: ['editing 3 files', 'running tests 9/14', 'building preview'][SCOUT.indexOf(c)],
+        pvBg: c.dark ? '#1c1917' : '#ffffff', pvFg: c.dark ? '#fafaf9' : '#1c1917', pvMuted: c.dark ? '#a8a29e' : '#78716c',
+        pvTrack: c.dark ? '#44403c' : '#e7e5e4', pvBar: c.dark ? '#2dd4bf' : '#0d9488', pvNote: c.note,
+        tests: running ? '—' : c.tests, testsColor: c.fail && !running ? C.conflict : 'var(--hw-color-ink-2)',
+        diff: running ? '—' : c.diff, cost: running ? '—' : c.cost,
+        risk: running ? '—' : c.risk.toFixed(2), riskColor, riskDash: running ? '0 1' : `${c.risk} 1`
+      };
+    });
+    const verdict = {
+      running: { label: 'Scout is watching', text: 'Three channels are working on a dark mode. Previews and tests will appear here as they land.', border: 'var(--hw-color-line)', bg: 'var(--hw-color-surface)', lc: 'var(--hw-color-ink-3)' },
+      verdict: { label: 'Verdict', text: 'ch-2 adds a theme-token layer across four files and keeps the light palette\u2019s contrast; every test passes. ch-3 also passes but hard-codes colors in six components, and ch-1 failed two contrast checks.', border: C.ch, bg: 'var(--hw-color-surface)', lc: C.ch },
+      tie: { label: 'Tie · your call', text: 'ch-2 and ch-3 both pass every test with similar previews. They differ in approach, not outcome: tokens versus a rewrite. Scout can\u2019t settle this one.', border: C.human, bg: 'var(--hw-color-human-soft)', lc: C.human }
+    }[scout];
+    const cardIds = eddy === 'three' ? ['pick', 'api', 'merge'] : eddy === 'one' ? ['pick'] : [];
+    const decisionCards = cardIds.map(id => CARDS[id]);
+    const screenLabel = { river: 'A · River', scout: 'B · Scout', eddy: 'C · Eddy', logbook: 'D · Logbook' }[screen];
+    return {
+      theme, screenLabel, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      go: { river: set('screen', 'river'), scout: set('screen', 'scout'), eddy: set('screen', 'eddy'), logbook: set('screen', 'logbook') },
+      railBg, railColor,
+      isRiver: screen === 'river', isScout: screen === 'scout', isEddy: screen === 'eddy', isLogbook: screen === 'logbook',
+      mainHash: merged ? '9c3e1f0' : '4f2a9c1',
+      agentCount: river === 'empty' && screen === 'river' ? 0 : 9, commitCount: river === 'empty' && screen === 'river' ? 0 : merged ? 44 : 41, previewCount: river === 'empty' && screen === 'river' ? 0 : 3,
+      decisions, hasDecisions: decisions > 0,
+      decisionLabel: decisions === 0 ? 'nothing for you' : decisions === 1 ? '1 decision for you' : `${decisions} decisions for you`,
+      decisionColor: decisions > 0 ? C.human : 'var(--hw-color-ink-3)',
+      riverSubtitle: { empty: 'No intents yet', running: '3 intents · 9 channels running', overlap: '3 intents · 9 channels · 1 overlap', merged: '3 intents merged · river is quiet' }[river],
+      isRiverEmpty: river === 'empty', isRiverLive: river !== 'empty', riverMap: this._map, feed,
+      isScoutRunning: scout === 'running', isScoutVerdict: scout === 'verdict', isScoutTie: scout === 'tie', isScoutReady: scout !== 'running',
+      verdictLabel: verdict.label, verdictText: verdict.text, verdictBorder: verdict.border, verdictBg: verdict.bg, verdictLabelColor: verdict.lc,
+      rank2: scout === 'tie' ? '1 · ch-3' : '2 · ch-3', rank3: scout === 'tie' ? '3 · ch-1' : '3 · ch-1',
+      scoutChannels,
+      isEddyZero: eddy === 'zero', isEddyInbox: eddy !== 'zero', decisionCards, autoCount: eddy === 'three' ? 36 : 38,
+      trailers: [['Headwaters-Channel', 'ch-5'], ['Headwaters-Intent', 'rate-limit-api'], ['Headwaters-Agent', 'codex'], ['Headwaters-Model', 'gpt-5-codex'], ['Headwaters-Cost', '$0.27'], ['Headwaters-Risk', '0.72'], ['Logbook', '0012']].map(([k, v]) => ({ k, v })),
+      diffLines: DIFF.map(([n, sign, text]) => ({ n, sign, text, bg: sign === '+' ? 'var(--hw-color-merged-soft)' : sign === '-' ? 'var(--hw-color-conflict-soft)' : 'transparent', color: sign === '-' ? 'var(--hw-color-ink-3)' : 'var(--hw-color-ink)' })),
+      showStateBar: (this.props.showStateBar ?? true) && stateOptions.length > 0, stateOptions
+    };
+  }
+}
+</script>
+</body>
+</html>
