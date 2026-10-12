@@ -1,0 +1,79 @@
+From 3bf685150e71cf09a43478160c4bf05a6e5f3610 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:31:31 -0700
+Subject: [PATCH 4/4] Cache /levels for 60 seconds
+
+cache(60) marks successful /levels responses Cache-Control: max-age=60.
+Errors and 429s are never marked, a handler's own Cache-Control wins,
+and there's no public directive, so shared caches don't store
+authorized responses. Only /levels, as the Intent asks.
+---
+ src/api/index.ts            |  3 ++-
+ src/api/middleware/cache.ts | 15 +++++++++++++++
+ test/rate-limit.test.ts     | 16 ++++++++++++++++
+ 3 files changed, 33 insertions(+), 1 deletion(-)
+ create mode 100644 src/api/middleware/cache.ts
+
+diff --git a/src/api/index.ts b/src/api/index.ts
+index faaa5f6..6a1fddc 100644
+--- a/src/api/index.ts
++++ b/src/api/index.ts
+@@ -1,11 +1,12 @@
+ import { Hono } from "hono";
+ import type { Env } from "../env";
+ import { level, levels } from "./levels";
++import { cache } from "./middleware/cache";
+ import { rateLimit } from "./middleware/rateLimit";
+ 
+ export const api = new Hono<{ Bindings: Env }>();
+ 
+ api.use("*", rateLimit());
+ 
+-api.get("/levels", levels);
++api.get("/levels", cache(60), levels);
+ api.get("/levels/:id", level);
+diff --git a/src/api/middleware/cache.ts b/src/api/middleware/cache.ts
+new file mode 100644
+index 0000000..0422a08
+--- /dev/null
++++ b/src/api/middleware/cache.ts
+@@ -0,0 +1,15 @@
++import { createMiddleware } from "hono/factory";
++
++/**
++ * Lets clients reuse a successful response for `seconds`. Only 200s are marked,
++ * so a 429 or 404 is never cached, and a Cache-Control set by the handler wins.
++ * No `public`: responses to authorized requests stay out of shared caches.
++ */
++export function cache(seconds: number) {
++  return createMiddleware(async (c, next) => {
++    await next();
++    if (c.res.status === 200 && !c.res.headers.has("Cache-Control")) {
++      c.header("Cache-Control", `max-age=${seconds}`);
++    }
++  });
++}
+diff --git a/test/rate-limit.test.ts b/test/rate-limit.test.ts
+index 9564f8f..a1fe3a6 100644
+--- a/test/rate-limit.test.ts
++++ b/test/rate-limit.test.ts
+@@ -127,3 +127,19 @@ describe("/api rate limit", () => {
+     expect(res.map((r) => r.status)).toEqual(Array(20).fill(200));
+   });
+ });
++
++describe("cache(60) on /levels", () => {
++  it("lets clients reuse /levels for 60 seconds", async () => {
++    const res = await app.request("/api/levels");
++    expect(res.headers.get("cache-control")).toBe("max-age=60");
++  });
++
++  it("never marks a refusal or another route cacheable", async () => {
++    const { env } = limiterEnv();
++    await statuses(env, 10, alice);
++    const refused = await app.request("/api/levels", { headers: alice }, env);
++    expect(refused.status).toBe(429);
++    expect(refused.headers.get("cache-control")).toBeNull();
++    expect((await app.request("/api/levels/snake-moose")).headers.get("cache-control")).toBeNull();
++  });
++});

@@ -1,0 +1,134 @@
+From 66774006e07017138a557320bfb0a57f1cd3d65e Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:36:56 -0700
+Subject: [PATCH 4/4] Serve /levels from the edge cache for 60 seconds
+
+cache(60) stores /levels in the Workers Cache API keyed by URL only
+(the data is public, so Authorization doesn't split the cache), marks it
+public, max-age=60, stale-while-revalidate=60, and labels X-Cache
+HIT/MISS. It runs after the rate limiter, so cached hits still count,
+and 429s are never stored. Tests stub the Cache API with a Map.
+---
+ src/api/edgeCache.ts    | 42 ++++++++++++++++++++++++++++++++++++++++
+ src/api/index.ts        |  3 ++-
+ test/rate-limit.test.ts | 43 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 87 insertions(+), 1 deletion(-)
+ create mode 100644 src/api/edgeCache.ts
+
+diff --git a/src/api/edgeCache.ts b/src/api/edgeCache.ts
+new file mode 100644
+index 0000000..d35a17f
+--- /dev/null
++++ b/src/api/edgeCache.ts
+@@ -0,0 +1,42 @@
++import { createMiddleware } from "hono/factory";
++
++const CACHE_NAME = "riverlevels-api";
++
++/**
++ * Serve a route from the edge cache (the Workers Cache API) for `seconds`.
++ *
++ * The data is public, so the cache key is the URL alone: the Authorization
++ * header doesn't split the cache (Hono's built-in cache middleware skips any
++ * request with Authorization, which is every API caller here). It sits after
++ * the rate limiter, so cached responses still count toward a caller's limit.
++ * Responses carry `X-Cache: HIT | MISS` and
++ * `Cache-Control: public, max-age=<seconds>, stale-while-revalidate=<seconds>`.
++ * Where there's no Cache API (Node, tests) it only sets the headers.
++ */
++export function cache(seconds: number) {
++  const cacheControl = `public, max-age=${seconds}, stale-while-revalidate=${seconds}`;
++  return createMiddleware(async (c, next) => {
++    const store = typeof caches === "undefined" ? null : await caches.open(CACHE_NAME);
++    const key = new Request(c.req.url, { method: "GET" });
++
++    const hit = await store?.match(key);
++    if (hit) {
++      const res = new Response(hit.body, hit);
++      res.headers.set("X-Cache", "HIT");
++      return res;
++    }
++
++    await next();
++    if (c.res.status !== 200) return;
++    c.res.headers.set("Cache-Control", cacheControl);
++    c.res.headers.set("X-Cache", "MISS");
++    if (!store) return;
++
++    const write = store.put(key, c.res.clone());
++    try {
++      c.executionCtx.waitUntil(write);
++    } catch {
++      await write; // no ExecutionContext outside the Workers runtime
++    }
++  });
++}
+diff --git a/src/api/index.ts b/src/api/index.ts
+index 7ac5c08..fb3924d 100644
+--- a/src/api/index.ts
++++ b/src/api/index.ts
+@@ -1,5 +1,6 @@
+ import { Hono } from "hono";
+ import type { Env } from "../env";
++import { cache } from "./edgeCache";
+ import { level, levels } from "./levels";
+ import { rateLimit } from "./ratelimit/middleware";
+ 
+@@ -8,5 +9,5 @@ export const api = new Hono<{ Bindings: Env }>();
+ // Every /api route, including unknown ones, counts toward the caller's limit.
+ api.use("*", rateLimit());
+ 
+-api.get("/levels", levels);
++api.get("/levels", cache(60), levels);
+ api.get("/levels/:id", level);
+diff --git a/test/rate-limit.test.ts b/test/rate-limit.test.ts
+index 96d0ebf..a1ca204 100644
+--- a/test/rate-limit.test.ts
++++ b/test/rate-limit.test.ts
+@@ -75,3 +75,46 @@ describe("rate limit", () => {
+     error.mockRestore();
+   });
+ });
++
++/** A Cache API in a Map, standing in for the Workers edge cache. */
++function memoryCaches() {
++  const entries = new Map<string, Response>();
++  const store = {
++    match: async (req: Request) => entries.get(req.url)?.clone(),
++    put: async (req: Request, res: Response) => void entries.set(req.url, res.clone()),
++  };
++  return { caches: { open: async () => store }, entries };
++}
++
++describe("cache(60) on /levels", () => {
++  afterEach(() => vi.unstubAllGlobals());
++
++  it("marks /levels publicly cacheable for 60 seconds", async () => {
++    const [res] = await send(memoryEnv().env, 1, alice);
++    expect(res!.headers.get("cache-control")).toBe("public, max-age=60, stale-while-revalidate=60");
++    expect(res!.headers.get("x-cache")).toBe("MISS");
++  });
++
++  it("serves repeat requests from the edge cache, whoever asks", async () => {
++    const edge = memoryCaches();
++    vi.stubGlobal("caches", edge.caches);
++    const { env } = memoryEnv();
++    const [first] = await send(env, 1, alice);
++    const [second] = await send(env, 1, bob);
++    expect(first!.headers.get("x-cache")).toBe("MISS");
++    expect(second!.headers.get("x-cache")).toBe("HIT");
++    expect(second!.headers.get("ratelimit")).toBe('"burst";r=9;t=1');
++    expect(await second!.json()).toEqual(await first!.json());
++    expect(edge.entries.size).toBe(1);
++  });
++
++  it("still counts cached responses toward the limit, and never caches a 429", async () => {
++    const edge = memoryCaches();
++    vi.stubGlobal("caches", edge.caches);
++    const { env } = memoryEnv();
++    const responses = await send(env, 11, alice);
++    expect(codes(responses)).toEqual([...Array(10).fill(200), 429]);
++    expect(responses[10]!.headers.get("cache-control")).toBeNull();
++    expect(edge.entries.size).toBe(1);
++  });
++});

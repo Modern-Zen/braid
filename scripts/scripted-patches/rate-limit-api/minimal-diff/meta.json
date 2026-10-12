@@ -1,0 +1,25 @@
+{
+  "intent": "rate-limit-api",
+  "strategy": "minimal-diff",
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "recordedAt": "2026-10-12T20:38:55Z",
+  "base": "a1e0aaba4cae0b27a958621c7f527aea2336f8d1",
+  "commits": [
+    {
+      "file": "0001-Add-a-Durable-Object-rate-limiter-and-cache-helper.patch",
+      "subject": "Add a Durable Object rate limiter and cache helper",
+      "delaySec": [15, 30]
+    },
+    {
+      "file": "0002-Rate-limit-api-and-cache-levels-for-60-seconds.patch",
+      "subject": "Rate-limit /api and cache /levels for 60 seconds",
+      "delaySec": [10, 25]
+    }
+  ],
+  "turns": 13,
+  "durationMs": 52000,
+  "costUsd": null,
+  "lines": ["src/api/**", "src/worker.ts", "wrangler.jsonc", "test/rate-limit.test.ts"],
+  "notes": "One module (src/api/rateLimit.ts): fetch-handler RateLimiter Durable Object with an in-memory bucket per caller (key = raw Authorization header, else IP), middleware returning 429 {error:'rate_limited', retryAfter:1}, skipped when the binding is absent, and cache(60) = Cache-Control: max-age=60 on /levels. wrangler.jsonc: binding plus v1 migration; --dry-run bundles it. 16/16, pnpm build passes. No Retry-After header; raw token used as the object name."
+}

@@ -1,0 +1,127 @@
+From 1b9bb18eb4b4c76e089d840a0316c71843bcdfd9 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:29:53 -0700
+Subject: [PATCH 2/4] Keep each caller's bucket in a Durable Object
+
+RateLimiter is a Durable Object with one instance per caller key, so a
+caller's limit holds across isolates and locations and takes are
+serialized. It keeps the bucket in memory (an evicted instance would
+have refilled anyway) and uses a plain fetch handler, so it also runs
+under Node in tests. Bound as RATE_LIMITER with a v1 migration, and
+exported from the Worker. src/env.ts declares the two Durable Object
+shapes used, instead of adding @cloudflare/workers-types.
+---
+ src/api/limiter/RateLimiter.ts | 42 ++++++++++++++++++++++++++++++++++
+ src/env.ts                     | 16 +++++++++++++
+ src/worker.ts                  |  6 ++++-
+ wrangler.jsonc                 |  8 ++++++-
+ 4 files changed, 70 insertions(+), 2 deletions(-)
+ create mode 100644 src/api/limiter/RateLimiter.ts
+ create mode 100644 src/env.ts
+
+diff --git a/src/api/limiter/RateLimiter.ts b/src/api/limiter/RateLimiter.ts
+new file mode 100644
+index 0000000..2cd3d60
+--- /dev/null
++++ b/src/api/limiter/RateLimiter.ts
+@@ -0,0 +1,42 @@
++import { API_LIMIT, fullBucket, take, type BucketState } from "./bucket";
++
++export interface LimitDecision {
++  allowed: boolean;
++  remaining: number;
++  retryAfterMs: number;
++}
++
++/**
++ * Durable Object holding one caller's token bucket. The Worker addresses it with
++ * `idFromName(<caller key>)`, so every request for a caller, from any isolate or
++ * location, reaches the same instance, and a Durable Object handles one request
++ * at a time, so takes never race.
++ *
++ * The bucket stays in memory. An instance is only evicted after it has been idle
++ * far longer than the one second a bucket needs to refill, so a fresh instance
++ * starting full gives the same answer storage would.
++ *
++ * Plain fetch handler on purpose: no `cloudflare:workers` import, so the class
++ * also runs under Node in the tests.
++ */
++export class RateLimiter {
++  private bucket: BucketState | null = null;
++
++  constructor(_state?: unknown, _env?: unknown) {}
++
++  protected now(): number {
++    return Date.now();
++  }
++
++  async fetch(_request: Request): Promise<Response> {
++    const now = this.now();
++    const result = take(this.bucket ?? fullBucket(API_LIMIT, now), API_LIMIT, now);
++    this.bucket = result.state;
++    const decision: LimitDecision = {
++      allowed: result.allowed,
++      remaining: result.remaining,
++      retryAfterMs: result.retryAfterMs,
++    };
++    return Response.json(decision);
++  }
++}
+diff --git a/src/env.ts b/src/env.ts
+new file mode 100644
+index 0000000..b9f61cb
+--- /dev/null
++++ b/src/env.ts
+@@ -0,0 +1,16 @@
++// Worker bindings. The two Durable Object shapes used here are declared locally
++// rather than adding @cloudflare/workers-types for them.
++
++export interface DurableObjectStubLike {
++  fetch(input: string, init?: RequestInit): Promise<Response>;
++}
++
++export interface DurableObjectNamespaceLike {
++  idFromName(name: string): unknown;
++  get(id: unknown): DurableObjectStubLike;
++}
++
++export interface Env {
++  /** One RateLimiter per caller. Absent under `pnpm dev` and in unit tests. */
++  RATE_LIMITER?: DurableObjectNamespaceLike;
++}
+diff --git a/src/worker.ts b/src/worker.ts
+index f2e7fc6..f7e73b2 100644
+--- a/src/worker.ts
++++ b/src/worker.ts
+@@ -1,9 +1,13 @@
+ import { Hono } from "hono";
+ import { api } from "./api";
++import type { Env } from "./env";
++
++// Durable Object classes must be exported from the Worker's main module.
++export { RateLimiter } from "./api/limiter/RateLimiter";
+ 
+ // The Worker answers /api/*. Everything else is the built UI in dist/, served as
+ // static assets (see `assets` in wrangler.jsonc).
+-export const app = new Hono();
++export const app = new Hono<{ Bindings: Env }>();
+ 
+ app.route("/api", api);
+ app.notFound((c) => c.json({ error: "not_found" }, 404));
+diff --git a/wrangler.jsonc b/wrangler.jsonc
+index ca17397..55219be 100644
+--- a/wrangler.jsonc
++++ b/wrangler.jsonc
+@@ -10,5 +10,11 @@
+     "directory": "./dist",
+     "not_found_handling": "single-page-application",
+     "run_worker_first": ["/api/*"]
+-  }
++  },
++
++  // /api rate limit: one RateLimiter Durable Object per caller (src/api/limiter/).
++  "durable_objects": {
++    "bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }]
++  },
++  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RateLimiter"] }]
+ }

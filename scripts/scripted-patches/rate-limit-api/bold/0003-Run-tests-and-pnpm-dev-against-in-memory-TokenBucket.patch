@@ -1,0 +1,303 @@
+From bf52860091fb8367bc9a9c6b71e71ad7441e11a2 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:36:11 -0700
+Subject: [PATCH 3/4] Run tests and pnpm dev against in-memory TokenBuckets
+
+src/dev/memoryEnv.ts runs real TokenBucket objects in-process with
+Map-backed storage, and can restart them while keeping their storage.
+Vite aliases cloudflare:workers to a small shim under Node, and the dev
+server passes the in-memory bindings to the Worker. The API and render
+tests now pass bindings, because /api fails closed without them. New
+tests cover the limit, the headers, per-token buckets, refill, restarts
+and failing closed. All green again.
+---
+ src/dev/memoryEnv.ts    | 51 +++++++++++++++++++++++++++
+ src/dev/workers-shim.ts | 12 +++++++
+ test/api.test.ts        | 14 +++++---
+ test/rate-limit.test.ts | 77 +++++++++++++++++++++++++++++++++++++++++
+ test/render.test.tsx    |  6 +++-
+ vite.config.ts          | 10 +++++-
+ 6 files changed, 163 insertions(+), 7 deletions(-)
+ create mode 100644 src/dev/memoryEnv.ts
+ create mode 100644 src/dev/workers-shim.ts
+ create mode 100644 test/rate-limit.test.ts
+
+diff --git a/src/dev/memoryEnv.ts b/src/dev/memoryEnv.ts
+new file mode 100644
+index 0000000..9999b69
+--- /dev/null
++++ b/src/dev/memoryEnv.ts
+@@ -0,0 +1,51 @@
++import { TokenBucket } from "../api/ratelimit/TokenBucket";
++import type { Env } from "../env";
++
++/** Durable Object storage in a Map. Values are copied in and out, like the real thing. */
++class MemoryStorage implements DurableObjectStorage {
++  private readonly data = new Map<string, unknown>();
++
++  async get<T>(key: string): Promise<T | undefined> {
++    const value = this.data.get(key);
++    return value === undefined ? undefined : (structuredClone(value) as T);
++  }
++
++  async put<T>(key: string, value: T): Promise<void> {
++    this.data.set(key, structuredClone(value));
++  }
++}
++
++/**
++ * Worker bindings for `pnpm dev` and tests: RATE_LIMITER runs real TokenBucket
++ * objects in-process, one per name, with storage in memory. `restart()` drops
++ * the live objects but keeps their storage, like the runtime evicting them.
++ */
++export function memoryEnv() {
++  const storages = new Map<string, MemoryStorage>();
++  const objects = new Map<string, TokenBucket>();
++
++  const object = (name: string): TokenBucket => {
++    let bucket = objects.get(name);
++    if (!bucket) {
++      const storage = storages.get(name) ?? new MemoryStorage();
++      storages.set(name, storage);
++      const ctx: DurableObjectState = { storage, blockConcurrencyWhile: (callback) => callback() };
++      bucket = new TokenBucket(ctx, {});
++      objects.set(name, bucket);
++    }
++    return bucket;
++  };
++
++  const env: Env = {
++    RATE_LIMITER: {
++      idFromName: (name) => ({ toString: () => name }),
++      get: (id) => object(id.toString()),
++    },
++  };
++
++  return {
++    env,
++    restart: () => objects.clear(),
++    names: () => [...storages.keys()],
++  };
++}
+diff --git a/src/dev/workers-shim.ts b/src/dev/workers-shim.ts
+new file mode 100644
+index 0000000..795a81d
+--- /dev/null
++++ b/src/dev/workers-shim.ts
+@@ -0,0 +1,12 @@
++// Node stand-in for the `cloudflare:workers` module, aliased in vite.config.ts
++// for tests and `pnpm dev`. Wrangler bundles the real module; this never ships.
++
++export abstract class DurableObject<Env = unknown> {
++  protected ctx: DurableObjectState;
++  protected env: Env;
++
++  constructor(ctx: DurableObjectState, env: Env) {
++    this.ctx = ctx;
++    this.env = env;
++  }
++}
+diff --git a/test/api.test.ts b/test/api.test.ts
+index bf059c7..d3ee8c6 100644
+--- a/test/api.test.ts
++++ b/test/api.test.ts
+@@ -1,10 +1,14 @@
+ import { describe, expect, it } from "vitest";
+ import type { LevelsResponse, River } from "../src/types";
++import { memoryEnv } from "../src/dev/memoryEnv";
+ import { app } from "../src/worker";
+ 
++/** Each request gets fresh bindings, so these tests never meet the rate limit. */
++const get = (path: string) => app.request(path, {}, memoryEnv().env);
++
+ describe("GET /api/levels", () => {
+   it("lists every river as JSON", async () => {
+-    const res = await app.request("/api/levels");
++    const res = await get("/api/levels");
+     expect(res.status).toBe(200);
+     expect(res.headers.get("content-type")).toContain("application/json");
+     const body = (await res.json()) as LevelsResponse;
+@@ -18,7 +22,7 @@ describe("GET /api/levels", () => {
+   });
+ 
+   it("reads 6.2 ft, 4,810 cfs and 51°F on the Snake River at Moose", async () => {
+-    const body = (await (await app.request("/api/levels")).json()) as LevelsResponse;
++    const body = (await (await get("/api/levels")).json()) as LevelsResponse;
+     const snake = body.rivers.find((r) => r.id === "snake-moose");
+     expect(snake).toMatchObject({
+       name: "Snake River",
+@@ -30,7 +34,7 @@ describe("GET /api/levels", () => {
+   });
+ 
+   it("keeps every reading inside its gauge's range", async () => {
+-    const body = (await (await app.request("/api/levels")).json()) as LevelsResponse;
++    const body = (await (await get("/api/levels")).json()) as LevelsResponse;
+     for (const river of body.rivers) {
+       for (const reading of [river.stage, river.flow, river.temp]) {
+         expect(reading.min).toBeLessThan(reading.max);
+@@ -44,7 +48,7 @@ describe("GET /api/levels", () => {
+ 
+ describe("GET /api/levels/:id", () => {
+   it("returns one river", async () => {
+-    const res = await app.request("/api/levels/salmon-whitebird");
++    const res = await get("/api/levels/salmon-whitebird");
+     expect(res.status).toBe(200);
+     const river = (await res.json()) as River;
+     expect(river.name).toBe("Salmon River");
+@@ -52,7 +56,7 @@ describe("GET /api/levels/:id", () => {
+   });
+ 
+   it("answers an unknown river with a JSON 404", async () => {
+-    const res = await app.request("/api/levels/mississippi-nowhere");
++    const res = await get("/api/levels/mississippi-nowhere");
+     expect(res.status).toBe(404);
+     expect(await res.json()).toEqual({ error: "not_found" });
+   });
+diff --git a/test/rate-limit.test.ts b/test/rate-limit.test.ts
+new file mode 100644
+index 0000000..96d0ebf
+--- /dev/null
++++ b/test/rate-limit.test.ts
+@@ -0,0 +1,77 @@
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { memoryEnv } from "../src/dev/memoryEnv";
++import type { Env } from "../src/env";
++import { app } from "../src/worker";
++
++const alice = { authorization: "Bearer alice-token" };
++const bob = { authorization: "Bearer bob-token" };
++
++async function send(env: Env, n: number, headers: Record<string, string>) {
++  const out: Response[] = [];
++  for (let i = 0; i < n; i++) out.push(await app.request("/api/levels", { headers }, env));
++  return out;
++}
++const codes = (responses: Response[]) => responses.map((r) => r.status);
++
++beforeEach(() => {
++  vi.useFakeTimers({ toFake: ["Date"] });
++  vi.setSystemTime(0);
++});
++afterEach(() => vi.useRealTimers());
++
++describe("rate limit", () => {
++  it("allows 10 requests a second per token, then answers 429", async () => {
++    const { env } = memoryEnv();
++    expect(codes(await send(env, 10, alice))).toEqual(Array(10).fill(200));
++    const [refused] = await send(env, 1, alice);
++    expect(refused!.status).toBe(429);
++    expect(refused!.headers.get("retry-after")).toBe("1");
++    expect(await refused!.json()).toEqual({ error: "rate_limited", retryAfter: 1 });
++  });
++
++  it("reports the policy and what's left in RateLimit headers", async () => {
++    const { env } = memoryEnv();
++    const responses = await send(env, 11, alice);
++    expect(responses[0]!.headers.get("ratelimit-policy")).toBe('"burst";q=10;w=1');
++    expect(responses[0]!.headers.get("ratelimit")).toBe('"burst";r=9;t=1');
++    expect(responses[9]!.headers.get("ratelimit")).toBe('"burst";r=0;t=1');
++    expect(responses[10]!.headers.get("ratelimit")).toBe('"burst";r=0;t=1');
++  });
++
++  it("counts each token separately", async () => {
++    const { env } = memoryEnv();
++    expect(codes(await send(env, 11, alice))).toContain(429);
++    expect(codes(await send(env, 10, bob))).toEqual(Array(10).fill(200));
++  });
++
++  it("refills one token every 100 ms", async () => {
++    const { env } = memoryEnv();
++    await send(env, 10, alice);
++    vi.setSystemTime(100);
++    expect(codes(await send(env, 2, alice))).toEqual([200, 429]);
++    vi.setSystemTime(1_100);
++    expect(codes(await send(env, 11, alice))).toEqual([...Array(10).fill(200), 429]);
++  });
++
++  it("holds the limit across a Durable Object restart", async () => {
++    const { env, restart } = memoryEnv();
++    await send(env, 10, alice);
++    restart();
++    expect(codes(await send(env, 1, alice))).toEqual([429]);
++  });
++
++  it("names buckets by a token hash or an IP, never the raw token", async () => {
++    const { env, names } = memoryEnv();
++    await send(env, 1, alice);
++    await send(env, 1, { "cf-connecting-ip": "203.0.113.7" });
++    expect(names()).toEqual([expect.stringMatching(/^token:[0-9a-f]{64}$/), "ip:203.0.113.7"]);
++  });
++
++  it("fails closed when there is no limiter", async () => {
++    const error = vi.spyOn(console, "error").mockImplementation(() => {});
++    const res = await app.request("/api/levels");
++    expect(res.status).toBe(503);
++    expect(await res.json()).toEqual({ error: "rate_limiter_unavailable" });
++    error.mockRestore();
++  });
++});
+diff --git a/test/render.test.tsx b/test/render.test.tsx
+index e7361ca..b9fc928 100644
+--- a/test/render.test.tsx
++++ b/test/render.test.tsx
+@@ -4,13 +4,17 @@ import { App } from "../src/App";
+ import { RiverCard } from "../src/components/RiverCard";
+ import { RIVERS } from "../src/api/data";
+ import type { LevelsResponse } from "../src/types";
++import { memoryEnv } from "../src/dev/memoryEnv";
+ import { app } from "../src/worker";
+ 
++/** Each request gets fresh bindings, so these tests never meet the rate limit. */
++const get = (path: string) => app.request(path, {}, memoryEnv().env);
++
+ const count = (html: string, needle: string) => html.split(needle).length - 1;
+ 
+ describe("server render", () => {
+   it("renders a card for every river the API returns", async () => {
+-    const body = (await (await app.request("/api/levels")).json()) as LevelsResponse;
++    const body = (await (await get("/api/levels")).json()) as LevelsResponse;
+     const html = renderToString(<App initialRivers={body.rivers} />);
+     expect(html).toContain("<h1>River levels</h1>");
+     expect(count(html, 'class="river-card"')).toBe(body.rivers.length);
+diff --git a/vite.config.ts b/vite.config.ts
+index 548def1..f643981 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -1,9 +1,12 @@
+ /// <reference types="vitest/config" />
++import { fileURLToPath } from "node:url";
+ import { defineConfig, type Plugin } from "vite";
+ 
+ // `pnpm dev` serves the UI and answers /api/* from the same Hono app the Worker
+ // runs, loaded through Vite's SSR loader, so one command runs the whole thing.
++// Its bindings come from src/dev/memoryEnv.ts (an in-process rate limiter).
+ function api(): Plugin {
++  let env: unknown;
+   return {
+     name: "riverlevels-api",
+     configureServer(server) {
+@@ -11,11 +14,12 @@ function api(): Plugin {
+         if (!req.url?.startsWith("/api/")) return next();
+         try {
+           const { app } = await server.ssrLoadModule("/src/worker.ts");
++          env ??= (await server.ssrLoadModule("/src/dev/memoryEnv.ts")).memoryEnv().env;
+           const headers = new Headers();
+           for (const [key, value] of Object.entries(req.headers)) {
+             if (typeof value === "string") headers.set(key, value);
+           }
+-          const response: Response = await app.request(req.url, { method: req.method, headers });
++          const response: Response = await app.request(req.url, { method: req.method, headers }, env);
+           res.statusCode = response.status;
+           response.headers.forEach((value, key) => res.setHeader(key, value));
+           res.end(new Uint8Array(await response.arrayBuffer()));
+@@ -31,6 +35,10 @@ export default defineConfig({
+   // JSX through esbuild's automatic runtime; no Babel, no extra plugin.
+   esbuild: { jsx: "automatic" },
+   plugins: [api()],
++  resolve: {
++    // The Workers runtime module, for tests and dev under Node. Wrangler bundles the real one.
++    alias: { "cloudflare:workers": fileURLToPath(new URL("./src/dev/workers-shim.ts", import.meta.url)) },
++  },
+   build: {
+     outDir: "dist",
+     emptyOutDir: true,
