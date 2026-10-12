@@ -8,8 +8,8 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends bash ca-certificates git ripgrep jq procps \
   && rm -rf /var/lib/apt/lists/*
 
-# pnpm for the demo River's tests; Claude Code (pinned) for live mode.
-RUN npm install --global pnpm@11.18.0 @anthropic-ai/claude-code@2.1.280 \
+# pnpm for tests, Claude Code (pinned) for live mode, wrangler for preview uploads.
+RUN npm install --global pnpm@11.18.0 @anthropic-ai/claude-code@2.1.280 wrangler@4.149.0 \
   && npm cache clean --force
 
 # Sandbox SDK 1.0 shim (Files, process control). Tag matches @cloudflare/sandbox.

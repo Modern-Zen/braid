@@ -16,6 +16,7 @@ import { commitView } from "../commits.ts";
 import { deleteRiverWork, getChannel, listChannels, listRivers } from "../db.ts";
 import { decide, eddyView } from "../eddy.ts";
 import { issueAgentToken } from "../mcp.ts";
+import { deployMain } from "../preview.ts";
 import { replayChannel, type ReplayRequest } from "../replay.ts";
 import { scoutView } from "../scout.ts";
 import { createRiver, HttpError, openIntent, refreshHead, riverSummary, type CreateRiverRequest } from "../intents.ts";
@@ -121,6 +122,16 @@ adminRivers.post("/", async (c) => {
 });
 
 adminRivers.post("/:id/refresh", async (c) => c.json({ head: await refreshHead(c.env, c.req.param("id")) }));
+
+/** Deploy the River's main as the preview base Worker (once; Channel previews upload against it). */
+adminRivers.post("/:id/deploy-main", async (c) => {
+  const riverId = c.req.param("id");
+  const repo = mainRepoName(riverId);
+  const info = await repoInfo(c.env.ARTIFACTS, repo);
+  if (!info) throw new HttpError(404, `No repo ${repo}`);
+  const result = await deployMain(c.env, repo, info.remote);
+  return c.json(result, result.ok ? 200 : 500);
+});
 
 /** Mint a River agent token for MCP (shown once). */
 adminRivers.post("/:id/agent-token", async (c) => {

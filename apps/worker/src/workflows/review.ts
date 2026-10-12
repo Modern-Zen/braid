@@ -11,6 +11,7 @@ import { parseRepoName, shortSha, type FeedEvent } from "@braid/protocol";
 import { claimReview, finishReview, getChannelByRepo, getIntent, getRiver, recordEventIndex, updateChannel } from "../db.ts";
 import { asArtifactsEvent, eventKey, storeRawEvent, toFeedEvent, type PushedPayload } from "../events.ts";
 import { refreshHead } from "../intents.ts";
+import { screenshot } from "../preview.ts";
 import { runReview, scoreRisk } from "../review.ts";
 import { maybeJudge } from "../scout.ts";
 
@@ -75,13 +76,39 @@ export class ReviewWorkflow extends WorkflowEntrypoint<Env, unknown> {
     });
 
     const run = await step.do("test in sandbox", { retries: { limit: 2, delay: "15 seconds", backoff: "linear" }, timeout: "12 minutes" }, async () => {
-      const r = await runReview(this.env, { repo, remote: channel.remote, sha: p.after, ...ctx });
+      const r = await runReview(this.env, { repo, remote: channel.remote, sha: p.after, ...ctx }, { previewAlias: channel.channelId });
       // Cache the diff for the Logbook view; keep the step result small.
       await this.env.BLOBS.put(`diffs/${repo}/${p.after}.json`, JSON.stringify({ files: r.files, message: r.message }), {
         httpMetadata: { contentType: "application/json" },
       });
-      return { tests: r.tests, testsRan: r.testsRan, diff: r.diff, paths: r.paths, rawDiff: r.rawDiff, logKey: r.logKey };
+      return { tests: r.tests, testsRan: r.testsRan, diff: r.diff, paths: r.paths, rawDiff: r.rawDiff, logKey: r.logKey, previewUrl: r.previewUrl };
     });
+
+    if (run.previewUrl) {
+      const url = run.previewUrl;
+      await step.do("preview ready", async () => {
+        await updateChannel(this.env.DB, channel.riverId, channel.channelId, { previewUrl: url });
+        const river = await getAgentByName(this.env.RiverAgent, channel.riverId);
+        await river.updateChannel(channel.intentId, channel.channelId, { previewUrl: url });
+        // One preview per Channel on the counter; later pushes refresh the same alias URL.
+        await river.recordEvent({
+          id: `preview.ready:${repo}`,
+          type: "preview.ready",
+          at: Date.now(),
+          riverId: channel.riverId,
+          intentId: channel.intentId,
+          channelId: channel.channelId,
+          detail: `${channel.channelId} · ${url}`,
+          data: { url },
+        });
+        return url;
+      });
+      await step.do("screenshot preview", { retries: { limit: 2, delay: "10 seconds" }, timeout: "2 minutes" }, async () => {
+        const key = await screenshot(this.env, url, `screenshots/${channel.riverId}/${channel.channelId}-${p.after.slice(0, 7)}.png`);
+        await updateChannel(this.env.DB, channel.riverId, channel.channelId, { screenshotKey: key });
+        return key;
+      });
+    }
 
     const risk = await step.do("score risk", async () =>
       scoreRisk(this.env, { intentTitle: ctx.intentTitle, paths: run.paths, diff: run.diff, tests: run.tests, rawDiff: run.rawDiff }),

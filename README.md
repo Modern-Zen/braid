@@ -85,8 +85,13 @@ pnpm --filter @braid/worker exec wrangler queues subscription create braid-artif
 pnpm --filter @braid/worker run db:migrate
 
 # Secrets
-pnpm --filter @braid/worker exec wrangler secret put ADMIN_TOKEN        # any long random string
-pnpm --filter @braid/worker exec wrangler secret put AI_GATEWAY_TOKEN   # live mode only
+pnpm --filter @braid/worker exec wrangler secret put ADMIN_TOKEN           # any long random string
+pnpm --filter @braid/worker exec wrangler secret put CF_ACCOUNT_ID         # your account id (wrangler whoami)
+# Optional: live agents and the Claude judge (via AI Gateway "braid")
+pnpm --filter @braid/worker exec wrangler secret put AI_GATEWAY_TOKEN      # gateway token with Run permission
+pnpm --filter @braid/worker exec wrangler secret put ANTHROPIC_API_KEY     # omit if the key is stored in AI Gateway (BYOK)
+# Optional: per-Channel previews (Workers preview aliases) and screenshots
+pnpm --filter @braid/worker exec wrangler secret put CLOUDFLARE_API_TOKEN  # Workers Scripts: Edit
 
 # Build the UI (runs design:sync) and deploy
 pnpm run deploy

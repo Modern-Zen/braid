@@ -36,4 +36,13 @@ if (token) {
 
 const { head } = await api<{ head: string | null }>("POST", `/api/admin/rivers/${RIVER.id}/refresh`);
 ok(`main @ ${head}`);
+
+// Previews (optional): deploy main once as the preview base Worker.
+try {
+  const d = await api<{ ok: boolean; url: string | null; log: string }>("POST", `/api/admin/rivers/${RIVER.id}/deploy-main`);
+  if (d.ok) ok(`preview base deployed: ${d.url ?? "(no URL in output)"}`);
+  else console.log(`  · previews off: ${d.log.split("\n").slice(-2).join(" ").trim()}`);
+} catch (err) {
+  console.log(`  · previews off: ${(err as Error).message.slice(0, 200)}`);
+}
 console.log("Seeded. Next: pnpm demo");

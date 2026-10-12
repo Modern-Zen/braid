@@ -25,12 +25,26 @@ export interface ReviewRun {
   subject: string;
   message: string;
   logKey: string | null;
+  /** Live preview of this push (Workers preview alias), when previews are configured. */
+  previewUrl: string | null;
+}
+
+export interface ReviewOptions {
+  /** Upload a preview version with this alias (e.g. "ch-3") when tests pass. */
+  previewAlias?: string;
+}
+
+type PreviewEnv = Env & { CF_ACCOUNT_ID?: string; CLOUDFLARE_API_TOKEN?: string };
+
+export function previewsEnabled(env: Env): boolean {
+  const e = env as PreviewEnv;
+  return !!e.CF_ACCOUNT_ID && !!e.CLOUDFLARE_API_TOKEN;
 }
 
 const RISK_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
 /** Clone at `sha`, diff against main's merge-base, install, run the tests. One sandbox per repo. */
-export async function runReview(env: Env, input: ReviewInput): Promise<ReviewRun> {
+export async function runReview(env: Env, input: ReviewInput, opts: ReviewOptions = {}): Promise<ReviewRun> {
   const sandbox = sandboxFor(env, `review:${input.repo}`);
   const [own, main] = await Promise.all([
     mintToken(env.ARTIFACTS, input.repo, "read", 1800),
@@ -43,6 +57,7 @@ export async function runReview(env: Env, input: ReviewInput): Promise<ReviewRun
       artifactsHost: a.host,
       repos: { [a.path]: { token: own.plaintext, write: false }, [m.path]: { token: main.plaintext, write: false } },
       allowNpm: true,
+      ...(opts.previewAlias && previewsEnabled(env) ? { cfApi: { accountId: (env as PreviewEnv).CF_ACCOUNT_ID! } } : {}),
     },
     "standard-2",
   );
@@ -79,14 +94,38 @@ export async function runReview(env: Env, input: ReviewInput): Promise<ReviewRun
       { timeoutSec: 480, env: { CI: "1", NO_COLOR: "1", FORCE_COLOR: "0" } },
     );
   }
-  await sandbox.sh(`rm -rf ${dir}`).catch(() => undefined);
-
   const log = test ? `${test.stdout}\n${test.stderr}` : "";
+  const tests = test ? parseTestOutput(log, test.exitCode) : { passed: 0, total: 0 };
+
+  // Green and previews configured: upload this push as a preview version of the River's Worker.
+  let previewUrl: string | null = null;
+  if (opts.previewAlias && test && previewsEnabled(env) && tests.total > 0 && tests.passed === tests.total) {
+    const up = await sandbox.sh(
+      [
+        `cd ${dir}`,
+        `if node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then pnpm build >/dev/null; fi`,
+        `wrangler versions upload --preview-alias ${q(opts.previewAlias)} --message ${q(input.sha.slice(0, 7))} 2>&1`,
+      ].join("\n"),
+      {
+        timeoutSec: 300,
+        env: {
+          // Placeholder: the Outbound gateway adds the real token for Workers API calls.
+          CLOUDFLARE_API_TOKEN: "provided-by-worker",
+          CLOUDFLARE_ACCOUNT_ID: (env as PreviewEnv).CF_ACCOUNT_ID!,
+          WRANGLER_SEND_METRICS: "false",
+          CI: "1",
+        },
+      },
+    );
+    previewUrl = pickPreviewUrl(up.stdout, opts.previewAlias);
+    if (!previewUrl) console.error("preview upload gave no URL", { repo: input.repo, out: up.stdout.slice(-800) });
+  }
+  await sandbox.sh(`rm -rf ${dir}`).catch(() => undefined);
   const logKey = test ? `logs/${input.repo}/${input.sha}.txt` : null;
   if (logKey) await env.BLOBS.put(logKey, log, { httpMetadata: { contentType: "text/plain; charset=utf-8" } });
 
   return {
-    tests: test ? parseTestOutput(log, test.exitCode) : { passed: 0, total: 0 },
+    tests,
     testsRan: !!test,
     diff,
     paths,
@@ -95,7 +134,14 @@ export async function runReview(env: Env, input: ReviewInput): Promise<ReviewRun
     subject: message.split("\n")[0] ?? "",
     message,
     logKey,
+    previewUrl,
   };
+}
+
+/** The alias URL from `wrangler versions upload` output, else any workers.dev URL. */
+export function pickPreviewUrl(out: string, alias: string): string | null {
+  const urls = [...out.matchAll(/https:\/\/[a-z0-9.-]+\.workers\.dev\S*/gi)].map((m) => m[0].replace(/[).,]+$/, ""));
+  return urls.find((u) => new URL(u).hostname.startsWith(`${alias}-`)) ?? urls[0] ?? null;
 }
 
 export function parseNumstat(text: string): { diff: DiffStat; paths: string[] } {

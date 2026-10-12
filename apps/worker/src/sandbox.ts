@@ -49,6 +49,8 @@ export interface OutboundProps {
   aiGateway?: { accountId: string; gatewayId: string };
   /** Identity for `braid-line` calls to $BRAID_API/internal/* (answered here, never forwarded). */
   channel?: { riverId: string; intentId: string; channelId: string; apiHost: string };
+  /** Preview uploads: wrangler may call the Workers API for this account; the token is added here. */
+  cfApi?: { accountId: string };
 }
 
 export interface CommandResult {
@@ -90,6 +92,16 @@ export class Outbound extends WorkerEntrypoint<Env, OutboundProps> {
     }
 
     if (grant.allowNpm && NPM_HOSTS.has(url.hostname)) return fetch(request);
+
+    if (grant.cfApi && url.hostname === "api.cloudflare.com") {
+      const scoped = url.pathname.startsWith(`/client/v4/accounts/${grant.cfApi.accountId}/workers/`) || url.pathname === "/client/v4/user/tokens/verify" || url.pathname === "/client/v4/memberships";
+      if (!scoped) return deny(`Workers API path ${url.pathname} is not allowed`);
+      const token = (this.env as Env & { CLOUDFLARE_API_TOKEN?: string }).CLOUDFLARE_API_TOKEN;
+      if (!token) return deny("CLOUDFLARE_API_TOKEN is not configured");
+      const headers = new Headers(request.headers);
+      headers.set("Authorization", `Bearer ${token}`);
+      return fetch(new Request(request, { headers }));
+    }
 
     if (grant.aiGateway && url.hostname === "gateway.ai.cloudflare.com") {
       const prefix = `/v1/${grant.aiGateway.accountId}/${grant.aiGateway.gatewayId}`;
