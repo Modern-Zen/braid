@@ -1,9 +1,11 @@
-# Braid: build plan
+# Headwaters: build plan
 
 **Many agents. One river.**
 A Git platform for the agentic era, built on Cloudflare Workers and Artifacts.
 
-*Modern Zen Strategies · draft v0 for Sedale's review · Oct 12, 2026*
+*Modern Zen Strategies · v1 (decisions locked) · Oct 12, 2026*
+
+**Codename `braid`:** used for the repo (`Modern-Zen/braid`), domain (`braid.drp.icu`), Artifacts namespace, and commit trailers. **Headwaters** is the product name.
 
 > **Deadline: submissions close Wed Oct 14, 2026.** That leaves about 48 hours of build time. Artifacts billing also starts Oct 15, so the demo account needs a spend cap. Everything below is scoped to fit that window. The *cut line* in §7 is the part that matters most.
 
@@ -42,7 +44,7 @@ Agents make hands abundant. Spinning up 50 attempts at a task costs almost nothi
 
 **Calm hands, fast water.** The water (the agents) moves fast and in many channels at once. The human stays calm. They read the river, pick the line, and make the few decisions that matter. The platform's job is to turn a thousand agent pushes into the one decision that needs a person.
 
-This ties directly to the 1-hour-per-business-per-week delegation thesis. Braid is that idea applied to software itself.
+This ties directly to the 1-hour-per-business-per-week delegation thesis. Headwaters is that idea applied to software itself.
 
 ### The metaphor
 
@@ -50,7 +52,7 @@ A **braided river** splits into many shallow channels that run side by side, shi
 
 **Rule for the vocabulary:** river words name the *nouns* in the product. All UI copy stays plain and declarative. No cleverness in sentences, matching the modernzen.co register.
 
-| Braid term | Plain meaning | Built on |
+| Headwaters term | Plain meaning | Built on |
 |---|---|---|
 | **River** | A project: the mainline repo plus everything flowing into it | Artifacts repo + `River` Durable Object |
 | **Intent** | A unit of work: a goal plus acceptance checks. Replaces the issue/PR pair | D1 row + Workflow |
@@ -61,7 +63,7 @@ A **braided river** splits into many shallow channels that run side by side, shi
 | **Logbook** | The versioned *why*: plan, transcript summary, and decisions for every commit | A context file inside each channel repo, plus Vectorize |
 | **Eddy** | The human inbox. Only decisions that need a person land here | `River` DO + WebSocket UI |
 
-`Braid` is a working name. Collisions and alternatives are in §11.
+Headwaters is the product name; `braid` stays as the codename (§11). A braided river starts at the headwaters, which is where the work begins here too.
 
 ---
 
@@ -86,7 +88,7 @@ Intent ──► fan-out ──► N Channels (forks) ──► agents work conc
 ```
 
 1. **Open an Intent.** "Add rate limiting to the API," with acceptance checks such as "tests pass; 429 returned after 10 req/s." This can come from the UI, the MCP tool, or a plain `git push` of an `intents/*.md` file.
-2. **Fan out.** Braid forks main into *N* Channels (default 3). Each gets a short-lived write token and runs a different agent, model, or strategy. Artifacts makes a repo per attempt cheap; that is the point of the product.
+2. **Fan out.** Headwaters forks main into *N* Channels (default 3). Each gets a short-lived write token and runs a different agent, model, or strategy. Artifacts makes a repo per attempt cheap; that is the point of the product.
 3. **Read the line.** Before editing, each agent declares the files/areas it expects to touch. The `River` Durable Object holds every live Line across every Intent. Overlaps are flagged instantly and broadcast to the agents (and the UI), so agents can avoid or sequence. *This answers "how do agents know what others are doing."*
 4. **Push with a Logbook.** Every commit carries trailers (`Braid-Intent:`, `Braid-Channel:`, `Braid-Logbook:`) pointing to a context file in the same repo: plan, key decisions, rejected approaches, and model used. The *why* is versioned with the code, forkable, and clonable. *This answers "why was this change made."*
 5. **React to every push.** Artifacts `repo.pushed` events → Queue → a review Workflow: run tests in a Sandbox, deploy a preview, screenshot it, and have a review agent score risk.
@@ -99,7 +101,7 @@ Intent ──► fan-out ──► N Channels (forks) ──► agents work conc
 
 ## 3. Cloudflare integration map: where each primitive earns its place
 
-| Primitive | Role in Braid | Why it's not decoration |
+| Primitive | Role in Headwaters | Why it's not decoration |
 |---|---|---|
 | **Artifacts** (binding) | Mainline repos, a fork per Channel, scoped tokens, `readFile`/`log`/`readTree` for UI and review | The whole product is "a repo per attempt." Forks, not branches, give agents total isolation and scoped credentials |
 | **Artifacts events** | `repo.pushed`, `repo.forked`, `token.created` → Queues | The heartbeat. Everything reacts to pushes; no polling, no webhooks to manage |
@@ -119,7 +121,7 @@ Intent ──► fan-out ──► N Channels (forks) ──► agents work conc
 | **Analytics Engine / Artifacts metrics** | River health: agents active, pushes/min, auto-merge rate, human-decision rate | The "calm" metric is a product feature |
 | **Cloudflare Access** | Gates the human UI | Zero auth code to write in 48h |
 
-### Five ideas that set Braid apart (lead the video with these)
+### Five ideas that set Headwaters apart (lead the video with these)
 
 1. **Forks, not branches.** Every attempt is its own repo with its own token. A rogue agent can't touch another agent's work or main.
 2. **Lines.** Agents declare intent *before* writing. Conflict is prevented upstream, not resolved downstream.
@@ -134,13 +136,13 @@ Intent ──► fan-out ──► N Channels (forks) ──► agents work conc
 ```mermaid
 flowchart LR
   subgraph Clients
-    UI[Braid UI<br/>Workers static assets]
+    UI[Headwaters UI<br/>Workers static assets]
     EXT[External agents<br/>Claude Code / Cursor via MCP]
     GIT[Any git client]
   end
 
   subgraph Edge[Cloudflare Workers]
-    API[Braid API Worker<br/>+ MCP server]
+    API[Headwaters API Worker<br/>+ MCP server]
     RIVER[(River DO<br/>Lines · presence · Eddy)]
     CH[(Channel DO<br/>agent state)]
     REV[[Review Workflow]]
@@ -292,19 +294,19 @@ The architecture slide goes in the README, not the video.
 
 ---
 
-## 11. Decisions for you
+## 11. Decisions (locked Oct 12)
 
-1. **Name.** `Braid` is the working name. Note that Braid is also an existing IETF HTTP sync protocol (braid.org), so search results will collide. Alternatives in the same metaphor: **Headwaters**, **Watershed**, **Riverbed**, **Confluence** (clashes with Atlassian, so no). My pick is *Braid* for the video and *Headwaters* if you want something ownable as a Modern Zen product later.
-2. **Public source home.** GitHub `Modern-Zen/braid` (MIT) as the public link. The repo itself will also be imported into Artifacts, so Braid hosts its own development. That's a nice detail for the video.
-3. **Domain.** Suggest `braid.drp.icu` (keeps it under the agent-entrance domain on the same Cloudflare account) or a `*.workers.dev` URL for speed.
-4. **Team for the SF trip.** Up to 2 people get flown out. Decide whether to name a second team member on the submission.
-5. **Agent runtime for live mode.** Claude Code headless in Sandbox (recommended; strongest demo) vs a lighter in-Worker agent loop.
+1. **Name:** Headwaters (product). Codename `braid` for technical identifiers.
+2. **Source:** GitHub `Modern-Zen/braid`, MIT. The repo will also be imported into Artifacts, so Headwaters hosts its own development.
+3. **Domain:** `braid.drp.icu` on the Modern Zen Cloudflare account (`sedale@drp.icu`).
+4. **Team:** Sedale solo for now.
+5. **Agent runtime (live mode):** Claude Code headless inside Sandbox containers, through AI Gateway.
 
 ---
 
 ## 12. Plan for the two deliverables
 
-These are written **after** you sign off on §1–§11, so they encode your decisions.
+Written Oct 12 with the decisions in §11: `prompts/claude-design.md` and `prompts/claude-code.md`.
 
 ### A. Claude Design prompt → `prompts/claude-design.md`
 
