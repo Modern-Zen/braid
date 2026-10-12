@@ -10,7 +10,8 @@
     "types": "wrangler types",
     "typecheck": "tsc -p tsconfig.json",
     "db:migrate": "wrangler d1 migrations apply braid --remote",
-    "db:migrate:local": "wrangler d1 migrations apply braid --local"
+    "db:migrate:local": "wrangler d1 migrations apply braid --local",
+    "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "typescript": "^5.9.0",
+    "vitest": "^3.2.7",
     "wrangler": "4.149.0"
   }
 }
