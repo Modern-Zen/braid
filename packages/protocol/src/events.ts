@@ -36,7 +36,7 @@ export interface FeedEvent {
   detail: string;
   /** For confluence.picked: who picked. */
   by?: "auto" | "you";
-  data?: Record<string, unknown>;
+  data?: Record<string, string | number | boolean | null>;
 }
 
 export function feedFamily(e: Pick<FeedEvent, "type" | "by">): FeedFamily {

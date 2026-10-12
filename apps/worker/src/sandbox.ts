@@ -9,6 +9,7 @@
 //   - AI Gateway (live agents), when allowed; the Worker adds the gateway token.
 import { Files, SandboxFileError } from "@cloudflare/sandbox";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
+import { getAgentByName } from "agents";
 
 const CA_PATH = "/etc/cloudflare/certs/cloudflare-containers-ca.crt";
 /** Every HTTPS request is re-signed by the containers CA, so tools must trust it. */
@@ -46,6 +47,8 @@ export interface OutboundProps {
   repos: Record<string, RepoGrant>;
   allowNpm: boolean;
   aiGateway?: { accountId: string; gatewayId: string };
+  /** Identity for `braid-line` calls to $BRAID_API/internal/* (answered here, never forwarded). */
+  channel?: { riverId: string; intentId: string; channelId: string; apiHost: string };
 }
 
 export interface CommandResult {
@@ -82,6 +85,10 @@ export class Outbound extends WorkerEntrypoint<Env, OutboundProps> {
       return fetch(new Request(request, { headers }));
     }
 
+    if (grant.channel && url.hostname === grant.channel.apiHost && url.pathname.startsWith("/internal/")) {
+      return this.internal(url, request, grant.channel);
+    }
+
     if (grant.allowNpm && NPM_HOSTS.has(url.hostname)) return fetch(request);
 
     if (grant.aiGateway && url.hostname === "gateway.ai.cloudflare.com") {
@@ -96,6 +103,23 @@ export class Outbound extends WorkerEntrypoint<Env, OutboundProps> {
     }
 
     return deny(`${url.hostname} is not reachable from this sandbox`);
+  }
+
+  /** braid-line from inside the container, answered for the Channel this sandbox belongs to. */
+  private async internal(url: URL, request: Request, ch: NonNullable<OutboundProps["channel"]>): Promise<Response> {
+    if (request.method !== "POST") return deny("POST only");
+    const body = (await request.json().catch(() => ({}))) as { globs?: unknown; note?: unknown };
+    const globs = Array.isArray(body.globs) ? body.globs.filter((g): g is string => typeof g === "string").slice(0, 50) : [];
+    const note = typeof body.note === "string" ? body.note.slice(0, 200) : undefined;
+    const river = await getAgentByName(this.env.RiverAgent, ch.riverId);
+    if (url.pathname === "/internal/line/declare") {
+      if (globs.length === 0) return Response.json({ error: "globs required" }, { status: 400 });
+      return Response.json(await river.declareLines({ channelId: ch.channelId, intentId: ch.intentId, globs, note }));
+    }
+    if (url.pathname === "/internal/line/release") {
+      return Response.json({ ok: true, released: await river.releaseLines(ch.channelId, globs) });
+    }
+    return deny("unknown internal route");
   }
 }
 

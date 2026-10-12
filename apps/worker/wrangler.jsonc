@@ -19,7 +19,8 @@
     "BRAID_AGENT_MODE": "scripted",
     "BRAID_BASE_DOMAIN": "braid.drp.icu",
     "AI_GATEWAY_ID": "braid",
-    "LIVE_MODEL": "claude-sonnet-5-5"
+    "LIVE_MODEL": "claude-sonnet-5-5",
+    "BRAID_SCRIPTED_SPEED": "1"
   },
   "secrets": { "required": ["ADMIN_TOKEN"] },
 

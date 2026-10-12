@@ -14,3 +14,6 @@ apps/ui/public/assets/
 
 # Local smoke/demo output.
 .braid/
+
+# Agent worktrees
+.claude/worktrees/

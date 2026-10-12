@@ -10,6 +10,7 @@ import { getAgentByName } from "agents";
 import { requireAdmin, requireHuman, type HwEnv } from "./auth.ts";
 import { handleArtifactsQueue } from "./events.ts";
 import { prepareSmoke, runSmoke, verifySmoke } from "./smoke.ts";
+import { adminRivers, httpErrorStatus, rivers } from "./routes/rivers.ts";
 
 export { RiverAgent } from "./agents/river.ts";
 export { ChannelAgent } from "./agents/channel.ts";
@@ -67,14 +68,14 @@ admin.get("/events/object", async (c) => {
   return new Response(obj.body, { headers: { "content-type": "application/json" } });
 });
 
-// ── Human API (M1+) ───────────────────────────────────────────────────────────
+admin.route("/rivers", adminRivers);
+
+// ── Human API ─────────────────────────────────────────────────────────────────
 const api = new Hono<App>();
 api.route("/admin", admin);
+api.use("/rivers", requireHuman);
 api.use("/rivers/*", requireHuman);
-api.get("/rivers/:id/feed", async (c) => {
-  const river = await getAgentByName(c.env.RiverAgent, c.req.param("id"));
-  return c.json({ feed: await river.getFeed(100) });
-});
+api.route("/rivers", rivers);
 app.route("/api", api);
 
 // ── Live River socket ─────────────────────────────────────────────────────────
@@ -97,6 +98,8 @@ app.get("/app/*", async (c) => {
 app.notFound((c) => (c.req.path.startsWith("/api/") ? c.json({ error: "not found" }, 404) : c.env.ASSETS.fetch(c.req.raw)));
 
 app.onError((err, c) => {
+  const known = httpErrorStatus(err);
+  if (known) return c.json({ error: known.message }, known.status as 400);
   console.error("unhandled", { path: c.req.path, err: err.stack ?? String(err) });
   return c.json({ error: "internal error" }, 500);
 });

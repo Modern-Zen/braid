@@ -10,15 +10,16 @@
   },
   "scripts": {
     "design:sync": "tsx scripts/sync-design.ts",
-    "build": "pnpm design:sync && pnpm --filter @braid/ui build",
+    "build": "pnpm design:sync && pnpm patches:bundle && pnpm --filter @braid/ui build",
     "dev": "pnpm build && pnpm --filter @braid/worker dev",
     "deploy": "pnpm build && pnpm --filter @braid/worker run deploy",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r typecheck && tsc -p scripts",
     "test": "pnpm -r test",
     "smoke": "tsx scripts/smoke.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "demo": "tsx scripts/demo.ts",
-    "reset:demo": "tsx scripts/reset-demo.ts"
+    "reset:demo": "tsx scripts/reset-demo.ts",
+    "patches:bundle": "tsx scripts/bundle-patches.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
