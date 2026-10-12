@@ -20,15 +20,16 @@ const watch = process.argv.includes("--watch");
 
 console.log(`Opening the demo Intents on ${RIVER.id} (${mode}) → ${BRAID_URL}`);
 const intents = DEMO_INTENTS.filter((i) => !only || only.includes(i.id!));
-const results = await Promise.allSettled(
-  intents.map((i) =>
-    api<{ intent: { id: string }; channels: Array<{ id: string; agent: string; strategy: string; repo: string }> }>(
-      "POST",
-      `/api/rivers/${RIVER.id}/intents`,
-      { ...i, mode },
-    ),
-  ),
-);
+// One after another, so Channel numbers follow the Intents (ch-1..3, ch-4..6, ch-7..9).
+// Each Intent's Channels still fork and start concurrently.
+type Opened = { intent: { id: string }; channels: Array<{ id: string; agent: string; strategy: string; repo: string }> };
+const results: PromiseSettledResult<Opened>[] = [];
+for (const i of intents) {
+  results.push(await api<Opened>("POST", `/api/rivers/${RIVER.id}/intents`, { ...i, mode }).then(
+    (value) => ({ status: "fulfilled" as const, value }),
+    (reason: unknown) => ({ status: "rejected" as const, reason }),
+  ));
+}
 for (const [k, r] of results.entries()) {
   if (r.status === "fulfilled") {
     ok(`${intents[k]!.title}: ${r.value.channels.map((c) => `${c.id} (${c.agent} · ${c.strategy})`).join(", ")}`);

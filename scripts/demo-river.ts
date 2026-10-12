@@ -13,18 +13,21 @@ export const DEMO_INTENTS: OpenIntentRequest[] = [
     title: "Add a dark mode",
     goal: "Add a dark mode to the dashboard. Respect prefers-color-scheme and keep the light palette's contrast.",
     checks: ["Tests pass", "Gauge labels keep at least 4.5:1 contrast in both themes", "prefers-color-scheme is respected"],
+    strategies: ["tests-first", "minimal-diff", "rewrite"],
   },
   {
     id: "rate-limit-api",
     title: "Add rate limiting to /api",
     goal: "Rate-limit /api with a Durable Object–backed token bucket: 10 req/s per token, 429 on overflow, and cache /levels for 60s.",
     checks: ["Tests pass", "429 with retryAfter after 10 req/s per token", "/levels is cached for 60s"],
+    strategies: ["minimal-diff", "conservative", "bold"],
   },
   {
     id: "refactor-gauge",
     title: "Refactor the gauge component",
     goal: "Extract the gauge's state and formatting logic from Gauge.tsx into a useGauge hook. No visual change.",
     checks: ["Tests pass", "src/hooks/useGauge.ts holds the gauge logic", "No visual change"],
+    strategies: ["minimal-diff", "tests-first", "rewrite"],
   },
 ];
 
