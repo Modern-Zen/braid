@@ -16,6 +16,9 @@ apps/demo-riverlevels    the demo River
 packages/protocol        commit trailers, MCP schemas, shared types
 prompts/                 Claude Design + Claude Code build prompts
 docs/                    plan, architecture
+design/README.md         index of the Claude Design export
+*.dc.html, headwaters-tokens.css, fonts/, assets/, support.js
+                         Claude Design export (repo root; reference only, synced into apps/ui)
 ```
 
 ## License
