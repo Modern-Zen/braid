@@ -1,10 +1,9 @@
 // Shared by seed-demo, demo and reset-demo: the demo River and its three Intents.
-import { execFileSync } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import type { OpenIntentRequest } from "@braid/protocol";
-import { git, repoRoot } from "./lib.ts";
+import { createBase } from "./scripted-patches/verify.ts";
 
 export const RIVER = { id: "riverlevels", name: "riverlevels", owner: "modern-zen" };
 
@@ -29,34 +28,13 @@ export const DEMO_INTENTS: OpenIntentRequest[] = [
   },
 ];
 
-const FIXED_DATE = "2026-10-12T09:00:00Z";
-
 /**
- * Build the seed commit from apps/demo-riverlevels as committed in this repo (git ls-files),
- * with a fixed author and date so every seed produces the same tree and commit.
+ * The seed commit for river-riverlevels: apps/demo-riverlevels as committed here, built by the
+ * same helper the recorded patch series were verified against, so main is byte-identical to
+ * their base (same files, identity and dates = same sha).
  */
 export function buildSeedRepo(): { dir: string; sha: string; cleanup: () => void } {
-  const work = mkdtempSync(join(tmpdir(), "braid-seed-"));
-  const files = execFileSync("git", ["ls-files", "apps/demo-riverlevels"], { cwd: repoRoot, encoding: "utf8" })
-    .split("\n")
-    .map((f) => f.trim())
-    .filter(Boolean);
-  if (files.length === 0) throw new Error("apps/demo-riverlevels has no committed files yet");
-  for (const f of files) {
-    const rel = f.slice("apps/demo-riverlevels/".length);
-    const to = join(work, rel);
-    mkdirSync(dirname(to), { recursive: true });
-    copyFileSync(join(repoRoot, f), to);
-  }
-  writeFileSync(join(work, ".gitattributes"), "* text=auto eol=lf\n");
-  git(work, ["init", "-q", "-b", "main"]);
-  git(work, ["-c", "core.autocrlf=false", "add", "-A"]);
-  const env = { GIT_AUTHOR_DATE: FIXED_DATE, GIT_COMMITTER_DATE: FIXED_DATE };
-  execFileSync(
-    "git",
-    ["-c", "user.name=Headwaters", "-c", "user.email=agents@braid.drp.icu", "-c", "core.autocrlf=false", "commit", "-q", "-m", "Initial commit: riverlevels"],
-    { cwd: work, env: { ...process.env, ...env } },
-  );
-  const sha = git(work, ["rev-parse", "HEAD"]);
-  return { dir: work, sha, cleanup: () => rmSync(work, { recursive: true, force: true }) };
+  const dir = mkdtempSync(join(tmpdir(), "braid-seed-"));
+  const sha = createBase(dir);
+  return { dir, sha, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
