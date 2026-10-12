@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@braid/protocol": "workspace:*",
+    "agents": "0.28.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

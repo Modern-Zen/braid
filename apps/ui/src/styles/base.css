@@ -30,7 +30,10 @@ a:hover {
   color: var(--hw-color-channel-hover);
 }
 
-button {
+button,
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -58,4 +61,117 @@ button {
 .hw-mono {
   font-family: var(--hw-font-mono);
   font-size: var(--hw-mono-size);
+}
+
+/* ── Interaction: color and border shifts only; nothing scales. ─────────────── */
+
+.hw-btn,
+.hw-btn-outline,
+.hw-btn-text,
+.hw-icon-btn,
+.hw-rail-item,
+.hw-btn-human,
+.hw-btn-human-outline {
+  transition:
+    background var(--hw-motion-fast) var(--hw-motion-ease-out),
+    color var(--hw-motion-fast) var(--hw-motion-ease-out),
+    border-color var(--hw-motion-fast) var(--hw-motion-ease-out);
+}
+
+/* Primary: ink on paper. */
+.hw-btn:hover:not(:disabled) {
+  background: var(--hw-color-ink-2) !important;
+  color: var(--hw-color-paper) !important;
+}
+/* Outlined: the border and label take the channel accent. */
+.hw-btn-outline:hover:not(:disabled),
+.hw-icon-btn:hover:not(:disabled) {
+  border-color: var(--hw-color-channel) !important;
+  color: var(--hw-color-channel) !important;
+}
+.hw-btn-text:hover:not(:disabled) {
+  color: var(--hw-color-ink) !important;
+}
+/* Amber buttons only exist when a person must decide (tie verdict). */
+.hw-btn-human:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--hw-color-human) 86%, var(--hw-color-ink)) !important;
+}
+.hw-btn-human-outline:hover:not(:disabled) {
+  background: var(--hw-color-human-soft) !important;
+}
+.hw-rail-item:hover {
+  color: var(--hw-color-ink) !important;
+}
+
+/* Disabled controls keep the design's look (e.g. "Open preview" before a preview exists). */
+button:disabled {
+  cursor: default !important;
+}
+button[aria-busy="true"] {
+  opacity: 0.6;
+}
+
+.hw-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Form fields (Open an Intent, Ask the river). */
+.hw-field {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--hw-color-line-strong);
+  border-radius: var(--hw-radius-md);
+  background: var(--hw-color-paper);
+  color: var(--hw-color-ink);
+  font-size: 14px;
+  line-height: 1.5;
+  transition: border-color var(--hw-motion-fast) var(--hw-motion-ease-out);
+}
+.hw-field:focus {
+  outline: none;
+  border-color: var(--hw-color-channel);
+  box-shadow: var(--hw-shadow-ring);
+}
+.hw-field::placeholder,
+.hw-ask::placeholder {
+  color: var(--hw-color-ink-4);
+}
+.hw-ask {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  padding: 0;
+  background: transparent;
+  color: var(--hw-color-ink);
+  font-size: 13.5px;
+}
+
+/* Native selects dressed as quiet text (Scout's Intent picker, Replay controls). */
+.hw-select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.hw-select:focus-visible {
+  outline: none;
+  box-shadow: var(--hw-shadow-ring);
+  border-radius: var(--hw-radius-xs);
+}
+.hw-select option {
+  color: var(--hw-color-ink);
+  background: var(--hw-color-surface);
 }
