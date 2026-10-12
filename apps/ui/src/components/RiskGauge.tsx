@@ -31,8 +31,9 @@ export function RiskGauge({ value, showValue = true }: RiskGaugeProps): ReactEle
       setDrawn(target);
       return;
     }
-    const raf = requestAnimationFrame(() => setDrawn(target));
-    return () => cancelAnimationFrame(raf);
+    // A timer rather than rAF: it still fires when the window isn't painting.
+    const t = setTimeout(() => setDrawn(target), 30);
+    return () => clearTimeout(t);
   }, [target]);
   const color = value === null ? "var(--hw-color-line)" : riskColor(value);
   return (
