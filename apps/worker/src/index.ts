@@ -11,6 +11,7 @@ import { requireAdmin, requireHuman, type HwEnv } from "./auth.ts";
 import { handleArtifactsQueue } from "./events.ts";
 import { prepareSmoke, runSmoke, verifySmoke } from "./smoke.ts";
 import { adminRivers, httpErrorStatus, rivers } from "./routes/rivers.ts";
+import { handleMcp } from "./mcp.ts";
 
 export { RiverAgent } from "./agents/river.ts";
 export { ChannelAgent } from "./agents/channel.ts";
@@ -84,8 +85,8 @@ app.get("/ws/river/:id", requireHuman, async (c) => {
   return river.fetch(c.req.raw);
 });
 
-// ── MCP (M8) ──────────────────────────────────────────────────────────────────
-app.all("/mcp", (c) => c.json({ error: "The MCP server lands in M8" }, 501));
+// ── MCP: external agents join a River with a per-River bearer token ──────────
+app.all("/mcp", (c) => handleMcp(c.req.raw, c.env, c.executionCtx as ExecutionContext));
 
 // ── App shell: /app/* serves the app entry for client-side routes ─────────────
 app.get("/app", (c) => c.redirect("/app/", 301));

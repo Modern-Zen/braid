@@ -36,6 +36,8 @@ export const McpTools = {
       river: slug,
       intent: slug,
       strategy: z.enum(STRATEGIES).default("minimal-diff"),
+      agent: z.string().min(1).max(40).describe("Your agent name, shown on your Channel, e.g. codex"),
+      model: z.string().min(1).max(80).describe("The model you are running"),
     },
   },
   "line.declare": {

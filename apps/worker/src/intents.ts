@@ -135,9 +135,10 @@ export async function openIntent(
   const intentId = req.id ?? slugify(req.title);
   if (!isSlug(intentId)) throw new HttpError(400, `Invalid intent id "${intentId}"`);
   const mode: AgentMode = req.mode ?? ((env.BRAID_AGENT_MODE as string) === "live" ? "live" : "scripted");
-  const strategies = strategiesFor(intentId, mode, req.strategies, river.policy.channelsPerIntent);
+  // An explicit empty list opens the Intent without fan-out (external agents take it over MCP).
+  const strategies = req.strategies && req.strategies.length === 0 ? [] : strategiesFor(intentId, mode, req.strategies, river.policy.channelsPerIntent);
 
-  if (mode === "scripted") {
+  if (mode === "scripted" && strategies.length > 0) {
     const missing = strategies.filter((s) => !recordedSeries(intentId, s));
     if (missing.length) throw new HttpError(400, `No recorded series for ${intentId}/${missing.join(", ")}; use mode "live"`);
   }
@@ -149,13 +150,13 @@ export async function openIntent(
     title: req.title.trim(),
     goal: (req.goal ?? req.title).trim(),
     checks: req.checks ?? [],
-    status: "running",
+    status: strategies.length > 0 ? "running" : "open",
     mode,
     createdAt: now,
   };
   if (!(await insertIntent(env.DB, intent))) throw new HttpError(409, `Intent "${intentId}" already exists`);
 
-  const first = await reserveChannelNumbers(env.DB, riverId, strategies.length);
+  const first = strategies.length > 0 ? await reserveChannelNumbers(env.DB, riverId, strategies.length) : 0;
   const river$ = await getAgentByName(env.RiverAgent, riverId);
   const planned = strategies.map((strategy, k) => {
     const n = first + k;
@@ -174,7 +175,7 @@ export async function openIntent(
   const view: IntentView = {
     id: intentId,
     title: intent.title,
-    status: "running",
+    status: intent.status,
     mode,
     openedAt: now,
     channels: planned.map(

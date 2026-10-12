@@ -15,6 +15,7 @@ import type { HwEnv } from "../auth.ts";
 import { commitView } from "../commits.ts";
 import { deleteRiverWork, getChannel, listChannels, listRivers } from "../db.ts";
 import { decide, eddyView } from "../eddy.ts";
+import { issueAgentToken } from "../mcp.ts";
 import { scoutView } from "../scout.ts";
 import { createRiver, HttpError, openIntent, refreshHead, riverSummary, type CreateRiverRequest } from "../intents.ts";
 
@@ -113,6 +114,14 @@ adminRivers.post("/", async (c) => {
 });
 
 adminRivers.post("/:id/refresh", async (c) => c.json({ head: await refreshHead(c.env, c.req.param("id")) }));
+
+/** Mint a River agent token for MCP (shown once). */
+adminRivers.post("/:id/agent-token", async (c) => {
+  const riverId = c.req.param("id");
+  const body = await c.req.json<{ label?: string }>().catch(() => ({ label: undefined }));
+  const token = await issueAgentToken(c.env, riverId, body.label ?? "agent");
+  return c.json({ river: riverId, token, mcp: new URL("/mcp", c.req.url).toString() }, 201);
+});
 
 /** Operator-only 10-minute write token for main (seed and reset scripts). Never sent to a browser. */
 adminRivers.post("/:id/main-token", async (c) => {

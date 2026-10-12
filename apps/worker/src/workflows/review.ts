@@ -8,7 +8,7 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 import { getAgentByName } from "agents";
 import { parseRepoName, shortSha, type FeedEvent } from "@braid/protocol";
-import { claimReview, finishReview, getChannelByRepo, getIntent, getRiver, recordEventIndex } from "../db.ts";
+import { claimReview, finishReview, getChannelByRepo, getIntent, getRiver, recordEventIndex, updateChannel } from "../db.ts";
 import { asArtifactsEvent, eventKey, storeRawEvent, toFeedEvent, type PushedPayload } from "../events.ts";
 import { refreshHead } from "../intents.ts";
 import { runReview, scoreRisk } from "../review.ts";
@@ -35,7 +35,9 @@ export class ReviewWorkflow extends WorkflowEntrypoint<Env, unknown> {
 
     const channel = await step.do("find channel", async () => {
       const ch = await getChannelByRepo(this.env.DB, repo);
-      return ch ? { riverId: ch.riverId, channelId: ch.id, intentId: ch.intentId, remote: ch.remote } : null;
+      if (!ch) return null;
+      const src = await this.env.DB.prepare("SELECT source FROM channels WHERE repo = ?").bind(repo).first<{ source: string }>();
+      return { riverId: ch.riverId, channelId: ch.id, intentId: ch.intentId, remote: ch.remote, external: src?.source === "mcp", commits: ch.commits };
     });
     if (!channel) return { rawKey, repo, skipped: "unknown channel" };
 
@@ -47,7 +49,20 @@ export class ReviewWorkflow extends WorkflowEntrypoint<Env, unknown> {
     const feed = toFeedEvent(e);
     if (feed) {
       await step.do("record repo.pushed", async () => {
-        await (await getAgentByName(this.env.RiverAgent, channel.riverId)).recordEvent(feed);
+        const river = await getAgentByName(this.env.RiverAgent, channel.riverId);
+        await river.recordEvent(feed);
+        if (channel.external) {
+          // No ChannelAgent drives an MCP Channel: the push itself advances it on the map.
+          const commits = channel.commits + p.totalCommitsCount;
+          await updateChannel(this.env.DB, channel.riverId, channel.channelId, { headSha: p.after, commits, status: "pushed", statusText: `pushed ${p.after.slice(0, 4)}…` });
+          await river.updateChannel(channel.intentId, channel.channelId, {
+            headSha: p.after,
+            commits,
+            status: "pushed",
+            statusText: `pushed ${p.after.slice(0, 4)}…`,
+            progress: Math.min(0.75, 0.2 + 0.12 * commits),
+          });
+        }
         return feed.id;
       });
     }
