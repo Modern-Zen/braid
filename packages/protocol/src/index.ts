@@ -5,3 +5,4 @@ export * from "./events.ts";
 export * from "./types.ts";
 export * from "./logbook.ts";
 export * from "./mcp.ts";
+export * from "./api.ts";

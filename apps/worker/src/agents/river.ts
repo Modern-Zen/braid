@@ -2,26 +2,27 @@
 // live Lines, presence, the Eddy, the live feed, and the calm counter.
 // Browser clients connect over WebSocket (/ws/river/:id) and receive state updates.
 import { Agent } from "agents";
-import type { Counters, FeedEvent, Line } from "@braid/protocol";
+import type { FeedEvent, RiverState } from "@braid/protocol";
 
 const FEED_IN_STATE = 60;
 const FEED_KEEP = 500;
 
-export interface RiverState {
-  riverId: string;
-  head: string | null; // short sha of main
-  counters: Counters;
-  feed: FeedEvent[]; // newest first
-  lines: Line[];
-}
+export type { RiverState };
 
 export class RiverAgent extends Agent<Env, RiverState> {
   override initialState: RiverState = {
     riverId: "",
+    name: "",
+    owner: "",
+    repo: "",
     head: null,
     counters: { agents: 0, commits: 0, previews: 0, decisions: 0, autoMerged: 0 },
+    intents: [],
     feed: [],
     lines: [],
+    overlaps: [],
+    decisions: 0,
+    merged: false,
   };
 
   // Clients read state; every change goes through server methods.
