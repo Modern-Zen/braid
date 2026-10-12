@@ -1,0 +1,61 @@
+/* Base layer on top of the synced design tokens. Plain CSS on --hw-* only. */
+@import "./headwaters-tokens.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--hw-color-paper);
+  color: var(--hw-color-ink);
+  font-family: var(--hw-font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  transition:
+    background var(--hw-motion-slow) var(--hw-motion-ease-out),
+    color var(--hw-motion-slow) var(--hw-motion-ease-out);
+}
+
+a {
+  color: var(--hw-color-channel);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--hw-color-channel-hover);
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--hw-shadow-ring);
+  border-radius: var(--hw-radius-sm);
+}
+
+.hw-label {
+  font-size: var(--hw-label-size);
+  font-weight: var(--hw-label-weight);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--hw-color-channel);
+}
+
+.hw-display {
+  font-family: var(--hw-font-display);
+  font-weight: var(--hw-display-weight);
+  letter-spacing: var(--hw-display-tracking);
+  line-height: var(--hw-display-lh);
+}
+
+.hw-mono {
+  font-family: var(--hw-font-mono);
+  font-size: var(--hw-mono-size);
+}

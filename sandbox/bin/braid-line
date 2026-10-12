@@ -1,0 +1,38 @@
+#!/usr/bin/env node
+// braid-line: declare or release Lines from inside a sandbox.
+//
+//   braid-line declare <glob>... [--note "why"]
+//   braid-line release [<glob>...]
+//
+// The request goes to $BRAID_API (the Headwaters host). The sandbox's Outbound
+// gateway intercepts it and answers for this Channel, so no token is needed here.
+// Exit codes: 0 ok · 3 overlap (stdout lists the overlaps as JSON) · 1 error.
+const [cmd, ...rest] = process.argv.slice(2);
+const api = process.env.BRAID_API;
+if (!api || !["declare", "release"].includes(cmd ?? "")) {
+  console.error("usage: braid-line declare <glob>... [--note text] | braid-line release [<glob>...]");
+  process.exit(1);
+}
+let note;
+const globs = [];
+for (let i = 0; i < rest.length; i++) {
+  if (rest[i] === "--note") note = rest[++i];
+  else globs.push(rest[i]);
+}
+if (cmd === "declare" && globs.length === 0) {
+  console.error("braid-line declare needs at least one glob");
+  process.exit(1);
+}
+const res = await fetch(`${api.replace(/\/+$/, "")}/internal/line/${cmd}`, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ globs, note }),
+});
+const body = await res.text();
+if (!res.ok) {
+  console.error(`braid-line: ${res.status} ${body}`);
+  process.exit(1);
+}
+const result = JSON.parse(body);
+console.log(JSON.stringify(result, null, 2));
+process.exit(result.ok === false ? 3 : 0);

@@ -1,0 +1,21 @@
+# Default: normalize text to LF in the repo.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+
+# Files that run inside the Linux sandbox must stay LF.
+*.sh text eol=lf
+Dockerfile text eol=lf
+
+# Recorded patch series must apply byte-for-byte.
+*.patch -text
+*.diff -text
+
+# Binary assets.
+*.ttf binary
+*.woff2 binary
+*.png binary
+*.webp binary
+.thumbnail binary

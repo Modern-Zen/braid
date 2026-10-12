@@ -1,0 +1,22 @@
+{
+  "name": "@braid/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Headwaters wire protocol: naming, trailers, Lines, feed events, Logbook, MCP tool schemas.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

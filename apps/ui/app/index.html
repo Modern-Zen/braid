@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Headwaters</title>
+    <link rel="icon" href="/assets/mz-icon-light.svg" media="(prefers-color-scheme: light)" />
+    <link rel="icon" href="/assets/mz-icon-dark.svg" media="(prefers-color-scheme: dark)" />
+    <script>
+      try {
+        var t = localStorage.getItem("hw-theme");
+        if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.setAttribute("data-hw-theme", t);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/app/main.tsx"></script>
+  </body>
+</html>

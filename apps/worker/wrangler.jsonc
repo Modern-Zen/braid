@@ -1,0 +1,84 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "braid",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "upload_source_maps": true,
+  "observability": { "enabled": true, "logs": { "enabled": true } },
+
+  // Landing at /, the app at /app/*. The Worker runs first for everything dynamic.
+  "assets": {
+    "directory": "../ui/dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/mcp", "/mcp/*", "/ws/*", "/health", "/app", "/app/*"]
+  },
+
+  "vars": {
+    "BRAID_AGENT_MODE": "scripted",
+    "BRAID_BASE_DOMAIN": "braid.drp.icu",
+    "AI_GATEWAY_ID": "braid",
+    "LIVE_MODEL": "claude-sonnet-5-5"
+  },
+  "secrets": { "required": ["ADMIN_TOKEN"] },
+
+  // One namespace for every River, Channel and Confluence repo.
+  "artifacts": [{ "binding": "ARTIFACTS", "namespace": "braid", "remote": true }],
+
+  // Agents and the sandbox are SQLite-backed Durable Objects, declared through `exports`
+  // (mutually exclusive with `migrations`).
+  "durable_objects": {
+    "bindings": [
+      { "name": "RiverAgent", "class_name": "RiverAgent" },
+      { "name": "ChannelAgent", "class_name": "ChannelAgent" },
+      { "name": "SANDBOX", "class_name": "AgentSandbox" }
+    ]
+  },
+  "exports": {
+    "RiverAgent": { "type": "durable-object", "storage": "sqlite" },
+    "ChannelAgent": { "type": "durable-object", "storage": "sqlite" },
+    "AgentSandbox": { "type": "durable-object", "storage": "sqlite" }
+  },
+  "containers": [
+    {
+      "class_name": "AgentSandbox",
+      "scheduling_policy": "durable_object",
+      "images": { "agent": { "dockerfile": "../../sandbox/Dockerfile" } }
+    }
+  ],
+
+  "workflows": [
+    { "name": "braid-review", "binding": "REVIEW_WF", "class_name": "ReviewWorkflow" },
+    { "name": "braid-confluence", "binding": "CONFLUENCE_WF", "class_name": "ConfluenceWorkflow" }
+  ],
+
+  // Every push to any repo in the namespace starts a review. One trigger covers every fork.
+  "triggers": {
+    "events": [
+      {
+        "type": "cf.artifacts.repo.pushed",
+        "filter": { "namespace": "braid" },
+        "targets": [{ "type": "workflow", "workflow_name": "braid-review" }]
+      }
+    ]
+  },
+
+  // Account-level Artifacts events (created / forked / deleted / imported) arrive here
+  // through a Queues event subscription. See docs/ARCHITECTURE.md.
+  "queues": {
+    "consumers": [{ "queue": "braid-artifacts-events", "max_batch_size": 25, "max_batch_timeout": 2 }]
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "braid",
+      "database_id": "fcd52234-81e7-49de-b085-4f1a31340d35",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "braid-blobs" }],
+  "ai": { "binding": "AI" },
+  "browser": { "binding": "BROWSER" }
+}

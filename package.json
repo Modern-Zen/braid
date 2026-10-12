@@ -1,0 +1,31 @@
+{
+  "name": "braid",
+  "private": true,
+  "description": "Headwaters: a Git platform for the agentic era, on Cloudflare Workers and Artifacts.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "design:sync": "tsx scripts/sync-design.ts",
+    "build": "pnpm design:sync && pnpm --filter @braid/ui build",
+    "dev": "pnpm build && pnpm --filter @braid/worker dev",
+    "deploy": "pnpm build && pnpm --filter @braid/worker run deploy",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "smoke": "tsx scripts/smoke.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "demo": "tsx scripts/demo.ts",
+    "reset:demo": "tsx scripts/reset-demo.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "@braid/protocol": "workspace:*"
+  }
+}
