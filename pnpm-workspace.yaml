@@ -1,6 +1,8 @@
 packages:
   - apps/*
   - packages/*
+  # The demo River is its own repo root (seeded into Artifacts), with its own lockfile.
+  - "!apps/demo-riverlevels"
 
 allowBuilds:
   esbuild: true
