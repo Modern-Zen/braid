@@ -1,0 +1,51 @@
+From 1510c3e20768863e214e3bc90741e4ff76041253 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:40:59 -0700
+Subject: [PATCH 2/2] Test useGauge directly
+
+Run the hook in a server render through a small probe component and
+check its formatting, metric start, fill and alert flag.
+---
+ test/useGauge.test.tsx | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+ create mode 100644 test/useGauge.test.tsx
+
+diff --git a/test/useGauge.test.tsx b/test/useGauge.test.tsx
+new file mode 100644
+index 0000000..a950c51
+--- /dev/null
++++ b/test/useGauge.test.tsx
+@@ -0,0 +1,33 @@
++import { renderToString } from "react-dom/server";
++import { describe, expect, it } from "vitest";
++import { useGauge, type GaugeState, type UseGaugeOptions } from "../src/hooks/useGauge";
++
++/** Run the hook in a server render and hand back what it returned. */
++function run(options: UseGaugeOptions): Omit<GaugeState, "toggleUnits"> {
++  let state: GaugeState | undefined;
++  function Probe() {
++    state = useGauge(options);
++    return null;
++  }
++  renderToString(<Probe />);
++  const { toggleUnits: _toggle, ...rest } = state!;
++  return rest;
++}
++
++describe("useGauge", () => {
++  it("formats each kind in US units", () => {
++    expect(run({ kind: "stage", value: 6.2, min: 0, max: 10 }).reading).toBe("6.2 ft");
++    expect(run({ kind: "flow", value: 4810, min: 0, max: 10000 }).reading).toBe("4,810 cfs");
++    expect(run({ kind: "temp", value: 51, min: 32, max: 86 }).reading).toBe("51°F");
++  });
++
++  it("starts in metric when asked", () => {
++    const stage = run({ kind: "stage", value: 6.2, min: 0, max: 10, defaultUnits: "metric" });
++    expect(stage).toMatchObject({ reading: "1.9 m", metric: true });
++  });
++
++  it("returns the clamped fill and the alert flag", () => {
++    expect(run({ kind: "stage", value: 6.2, min: 0, max: 10, alertAt: 9 })).toMatchObject({ pct: 62, alert: false });
++    expect(run({ kind: "stage", value: 12, min: 0, max: 10, alertAt: 9 })).toMatchObject({ pct: 100, alert: true });
++  });
++});

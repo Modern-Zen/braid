@@ -1,0 +1,69 @@
+From 6c553d97b6ff482fd136afd83fcc4dd3bd3439f7 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:45:50 -0700
+Subject: [PATCH 3/3] Test useGauge's scales, helpers and prop getters
+
+Cover the SCALES table, formatting (now with thousands grouping in metric
+too), the fill clamp, the hook's output in both unit systems, and the
+meter and toggle props it hands out.
+---
+ test/useGauge.test.tsx | 50 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+ create mode 100644 test/useGauge.test.tsx
+
+diff --git a/test/useGauge.test.tsx b/test/useGauge.test.tsx
+new file mode 100644
+index 0000000..3a3d615
+--- /dev/null
++++ b/test/useGauge.test.tsx
+@@ -0,0 +1,50 @@
++import { renderToString } from "react-dom/server";
++import { describe, expect, it } from "vitest";
++import { SCALES, fillPercent, formatReading, useGauge, type UseGauge } from "../src/hooks/useGauge";
++import type { GaugeKind, Reading } from "../src/types";
++
++const snakeStage: Reading = { value: 6.2, unit: "ft", min: 0, max: 10, alertAt: 9 };
++
++function run(kind: GaugeKind, reading: Reading, units?: "us" | "metric"): UseGauge {
++  let state: UseGauge | undefined;
++  function Probe() {
++    state = useGauge(kind, "Gauge", reading, units);
++    return null;
++  }
++  renderToString(<Probe />);
++  return state!;
++}
++
++describe("useGauge helpers", () => {
++  it("has a scale for every kind in both unit systems", () => {
++    for (const kind of ["stage", "flow", "temp"] as const) {
++      expect(Object.keys(SCALES[kind]).sort()).toEqual(["metric", "us"]);
++    }
++  });
++
++  it("formats readings, grouping thousands in both systems", () => {
++    expect(formatReading("flow", 4810, "us")).toBe("4,810 cfs");
++    expect(formatReading("flow", 40000, "metric")).toBe("1,132.7 m³/s");
++    expect(formatReading("temp", 14, "metric")).toBe("-10°C");
++  });
++
++  it("clamps the fill to the gauge's range", () => {
++    expect(fillPercent(snakeStage)).toBeCloseTo(62);
++    expect(fillPercent({ ...snakeStage, value: -3 })).toBe(0);
++    expect(fillPercent({ ...snakeStage, min: 2, max: 2 })).toBe(0);
++  });
++});
++
++describe("useGauge", () => {
++  it("returns text, fill and alert for the default units", () => {
++    expect(run("stage", snakeStage)).toMatchObject({ units: "us", text: "6.2 ft", alert: false });
++    expect(run("stage", { ...snakeStage, value: 9.1 }, "metric")).toMatchObject({ units: "metric", text: "2.8 m", alert: true });
++  });
++
++  it("hands out ARIA meter props and a toggle button", () => {
++    const gauge = run("temp", { value: 51, unit: "°F", min: 32, max: 86 });
++    expect(gauge.getMeterProps()).toMatchObject({ role: "meter", "aria-valuenow": 51, "aria-valuetext": "51°F" });
++    expect(gauge.getToggleProps()).toMatchObject({ type: "button", title: "Show metric units" });
++    expect(gauge.getToggleProps().onClick).toBe(gauge.toggleUnits);
++  });
++});

@@ -1,0 +1,30 @@
+{
+  "intent": "refactor-gauge",
+  "strategy": "rewrite",
+  "agent": "claude-code",
+  "model": "claude-opus-5-5",
+  "recordedAt": "2026-10-12T20:45:50Z",
+  "base": "a1e0aaba4cae0b27a958621c7f527aea2336f8d1",
+  "commits": [
+    {
+      "file": "0001-Rewrite-the-gauge-logic-as-a-table-driven-useGauge-h.patch",
+      "subject": "Rewrite the gauge logic as a table-driven useGauge hook",
+      "delaySec": [20, 40]
+    },
+    {
+      "file": "0002-Rebuild-Gauge-on-useGauge-and-pass-it-a-Reading.patch",
+      "subject": "Rebuild Gauge on useGauge and pass it a Reading",
+      "delaySec": [20, 35]
+    },
+    {
+      "file": "0003-Test-useGauge-s-scales-helpers-and-prop-getters.patch",
+      "subject": "Test useGauge's scales, helpers and prop getters",
+      "delaySec": [15, 30]
+    }
+  ],
+  "turns": 14,
+  "durationMs": 82000,
+  "costUsd": null,
+  "lines": ["src/components/**", "src/hooks/**", "test/gauge.test.tsx", "test/useGauge.test.tsx"],
+  "notes": "Rewrite: table-driven SCALES with Intl formatting, pure formatReading/fillPercent, and prop getters (getMeterProps, getToggleProps) in src/hooks/useGauge.ts; Gauge becomes presentation only with a new prop shape (reading={Reading}); RiverCard and the gauge test's fixtures adapted (assertions unchanged). One behavior change: metric flow groups thousands. 19/19, pnpm build passes. Conflicts with dark-mode series on src/components/Gauge.tsx (and RiverCard.tsx / test/gauge.test.tsx with some)."
+}

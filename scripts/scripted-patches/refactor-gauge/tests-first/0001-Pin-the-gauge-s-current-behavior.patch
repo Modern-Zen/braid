@@ -1,0 +1,67 @@
+From 3106f77b55bc76b5c395a29bfd24721823432c8c Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:42:05 -0700
+Subject: [PATCH 1/4] Pin the gauge's current behavior
+
+Characterization tests for the edges the existing suite doesn't reach:
+ungrouped metric flow, sub-zero conversion, fill rounding, the alert
+threshold's boundary, and the ARIA and title text in both unit systems.
+They pass against today's Gauge and must keep passing through the
+refactor.
+---
+ test/gauge-behavior.test.tsx | 46 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
+ create mode 100644 test/gauge-behavior.test.tsx
+
+diff --git a/test/gauge-behavior.test.tsx b/test/gauge-behavior.test.tsx
+new file mode 100644
+index 0000000..e6f769f
+--- /dev/null
++++ b/test/gauge-behavior.test.tsx
+@@ -0,0 +1,46 @@
++// Characterization tests: what Gauge does today, edge cases included, so the
++// refactor can prove it changed nothing.
++import { renderToString } from "react-dom/server";
++import { describe, expect, it } from "vitest";
++import { Gauge, type GaugeProps } from "../src/components/Gauge";
++
++const html = (props: GaugeProps) => renderToString(<Gauge {...props} />);
++const value = (markup: string) => /class="gauge-value"[^>]*>([^<]*)<\/button>/.exec(markup)?.[1];
++const width = (markup: string) => /width:(\d+)%/.exec(markup)?.[1];
++
++describe("Gauge today", () => {
++  it("keeps metric flow ungrouped with one decimal", () => {
++    expect(value(html({ kind: "flow", label: "Flow", value: 40000, min: 0, max: 40000, defaultUnits: "metric" }))).toBe(
++      "1132.7 m³/s",
++    );
++  });
++
++  it("converts freezing and sub-zero temperatures", () => {
++    expect(value(html({ kind: "temp", label: "Temp", value: 32, min: 0, max: 100, defaultUnits: "metric" }))).toBe("0°C");
++    expect(value(html({ kind: "temp", label: "Temp", value: 14, min: 0, max: 100, defaultUnits: "metric" }))).toBe("-10°C");
++  });
++
++  it("rounds the bar to whole percent", () => {
++    expect(width(html({ kind: "stage", label: "Stage", value: 3.33, min: 0, max: 10 }))).toBe("33");
++    expect(width(html({ kind: "stage", label: "Stage", value: 3.36, min: 0, max: 10 }))).toBe("34");
++  });
++
++  it("alerts at the threshold, not below it, and never without one", () => {
++    const at = { kind: "stage", label: "Stage", min: 0, max: 10 } as const;
++    expect(html({ ...at, value: 9, alertAt: 9 })).toContain('data-alert="true"');
++    expect(html({ ...at, value: 8.99, alertAt: 9 })).not.toContain("data-alert");
++    expect(html({ ...at, value: 10 })).not.toContain("data-alert");
++  });
++
++  it("describes itself to assistive tech in the units shown", () => {
++    const us = html({ kind: "stage", label: "Stage", value: 6.2, min: 0, max: 10 });
++    expect(us).toContain('aria-label="Stage"');
++    expect(us).toContain('aria-valuenow="6.2"');
++    expect(us).toContain('aria-valuetext="6.2 ft"');
++    expect(us).toContain('title="Show metric units"');
++    const metric = html({ kind: "stage", label: "Stage", value: 6.2, min: 0, max: 10, defaultUnits: "metric" });
++    expect(metric).toContain('aria-valuenow="6.2"');
++    expect(metric).toContain('aria-valuetext="1.9 m"');
++    expect(metric).toContain('title="Show US units"');
++  });
++});

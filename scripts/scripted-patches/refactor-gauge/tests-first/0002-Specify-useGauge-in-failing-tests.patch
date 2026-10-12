@@ -1,0 +1,66 @@
+From 3ab24ab27810dfe46034212430cbd2142d4fdb55 Mon Sep 17 00:00:00 2001
+From: Headwaters <agents@braid.drp.icu>
+Date: Mon, 12 Oct 2026 13:42:27 -0700
+Subject: [PATCH 2/4] Specify useGauge in failing tests
+
+The extracted API, written down first: gaugeReading(input, units) is a
+pure function returning reading, pct and alert, and useGauge adds the
+units state and a toggle on top of it. Fails until src/hooks/useGauge.ts
+exists.
+---
+ test/useGauge.test.tsx | 46 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
+ create mode 100644 test/useGauge.test.tsx
+
+diff --git a/test/useGauge.test.tsx b/test/useGauge.test.tsx
+new file mode 100644
+index 0000000..a01c4f1
+--- /dev/null
++++ b/test/useGauge.test.tsx
+@@ -0,0 +1,46 @@
++import { renderToString } from "react-dom/server";
++import { describe, expect, it } from "vitest";
++import { gaugeReading, useGauge, type GaugeInput, type UseGauge } from "../src/hooks/useGauge";
++
++const stage: GaugeInput = { kind: "stage", value: 6.2, min: 0, max: 10, alertAt: 9 };
++const flow: GaugeInput = { kind: "flow", value: 4810, min: 0, max: 10000 };
++const temp: GaugeInput = { kind: "temp", value: 51, min: 32, max: 86 };
++
++describe("gaugeReading", () => {
++  it("formats every kind in both unit systems", () => {
++    expect([stage, flow, temp].map((g) => gaugeReading(g, "us").reading)).toEqual(["6.2 ft", "4,810 cfs", "51°F"]);
++    expect([stage, flow, temp].map((g) => gaugeReading(g, "metric").reading)).toEqual(["1.9 m", "136.2 m³/s", "11°C"]);
++  });
++
++  it("returns the clamped fill and the alert flag", () => {
++    expect(gaugeReading(stage, "us")).toMatchObject({ pct: 62, alert: false });
++    expect(gaugeReading({ ...stage, value: 11 }, "us")).toMatchObject({ pct: 100, alert: true });
++    expect(gaugeReading({ ...stage, min: 4, max: 4 }, "us").pct).toBe(0);
++  });
++});
++
++describe("useGauge", () => {
++  /** Run the hook in a server render and hand back what it returned. */
++  function run(input: GaugeInput & { defaultUnits?: "us" | "metric" }): UseGauge {
++    let state: UseGauge | undefined;
++    function Probe() {
++      state = useGauge(input);
++      return null;
++    }
++    renderToString(<Probe />);
++    return state!;
++  }
++
++  it("starts in the default units and matches gaugeReading", () => {
++    const us = run(stage);
++    expect(us.units).toBe("us");
++    expect(us).toMatchObject(gaugeReading(stage, "us"));
++    const metric = run({ ...stage, defaultUnits: "metric" });
++    expect(metric.units).toBe("metric");
++    expect(metric).toMatchObject(gaugeReading(stage, "metric"));
++  });
++
++  it("offers a units toggle", () => {
++    expect(typeof run(flow).toggleUnits).toBe("function");
++  });
++});
