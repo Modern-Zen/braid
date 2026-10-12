@@ -9,6 +9,7 @@ import type {
   EddyView,
   IntentView,
   OpenIntentRequest,
+  RiverState,
   RiverSummary,
   ScoutView,
   Strategy,
@@ -103,17 +104,67 @@ export function pickChannel(riverId: string, intentId: string, channelId: string
 }
 
 /**
- * Proposed (M9, not yet in packages/protocol): POST /api/rivers/:id/replay.
- * "Replay from here": fork the Channel repo at `sha` into a new Channel.
+ * POST /api/rivers/:id/channels/:ch/replay {sha, strategy, model?}
+ * "Replay from here": fork the Channel at `sha` into a new Channel.
  */
 export interface ReplayRequest {
-  repo: string;
   sha: string;
-  agent: string;
   strategy: Strategy;
+  model?: string;
 }
-export function replayFrom(riverId: string, req: ReplayRequest): Promise<{ channelId?: string }> {
-  return request(`${river(riverId)}/replay`, { method: "POST", body: JSON.stringify(req) });
+export function replayChannel(riverId: string, channelId: string, req: ReplayRequest): Promise<{ channelId?: string; id?: string } | undefined> {
+  return request(`${river(riverId)}/channels/${enc(channelId)}/replay`, { method: "POST", body: JSON.stringify(req) });
+}
+
+// ── Session (operator token when Cloudflare Access isn't in front) ────────────
+
+export type SessionStatus = "ok" | "signin";
+
+/**
+ * GET /api/session. 401 means "sign in"; anything else (200, or a Worker that isn't
+ * there, as in `vite dev` alone) lets the app proceed and fall back per request.
+ */
+export async function getSession(): Promise<SessionStatus> {
+  try {
+    const res = await fetch("/api/session", { credentials: "same-origin", headers: { accept: "application/json" } });
+    return res.status === 401 ? "signin" : "ok";
+  } catch {
+    return "ok";
+  }
+}
+
+/** POST /api/session {token}: sets the session cookie the REST API and the River socket use. */
+export async function signIn(token: string): Promise<void> {
+  await request("/api/session", { method: "POST", body: JSON.stringify({ token }) });
+}
+
+// ── Commits and state ─────────────────────────────────────────────────────────
+
+/** GET /api/rivers/:id/commits?repo= — recent commits, main by default. */
+export interface CommitSummary {
+  sha: string;
+  subject: string;
+  /** Trailer pairs (or a key → value map, depending on the Worker version). */
+  trailers: Array<{ key: string; value: string }> | Record<string, string>;
+  committedAt: number;
+}
+export async function getCommits(riverId: string, repo?: string): Promise<CommitSummary[]> {
+  const q = repo ? `?repo=${enc(repo)}` : "";
+  const body = await request<CommitSummary[] | { commits: CommitSummary[] }>(`${river(riverId)}/commits${q}`);
+  return Array.isArray(body) ? body : body.commits;
+}
+
+/** The Logbook number a commit's trailers point at, if any ("Logbook: 0012"). */
+export function logbookTrailer(t: CommitSummary["trailers"] | undefined): string | null {
+  if (!t) return null;
+  if (Array.isArray(t)) return t.find((p) => p.key.toLowerCase() === "logbook")?.value ?? null;
+  for (const [k, v] of Object.entries(t)) if (k.toLowerCase() === "logbook" && v) return v;
+  return null;
+}
+
+/** GET /api/rivers/:id/state — RiverState over REST, when the socket can't connect. */
+export function getRiverState(riverId: string): Promise<RiverState> {
+  return request<RiverState>(`${river(riverId)}/state`);
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────

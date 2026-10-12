@@ -8,7 +8,7 @@ import { SearchIcon } from "../../components/icons.tsx";
 import { QuietSelect } from "../../components/QuietSelect.tsx";
 import { TrailerTags } from "../../components/TrailerTag.tsx";
 import { formatDuration, relTimeLong } from "../../lib/format.ts";
-import { askRiver, getCommit, replayFrom, useResource } from "../data/api.ts";
+import { askRiver, getCommit, getCommits, logbookTrailer, replayChannel, useResource } from "../data/api.ts";
 import { ASK_FIXTURE, ASK_QUERY, commitFixture } from "../data/fixtures.ts";
 import { Link, navigate } from "../router.tsx";
 import { ScreenHeader } from "../ScreenHeader.tsx";
@@ -24,12 +24,26 @@ export interface LogbookScreenProps {
   now: number;
 }
 
+/**
+ * With no sha in the URL: the most recent commit on main that carries a Logbook trailer
+ * (else the newest commit, else main's head).
+ */
+async function defaultCommit(river: RiverState): Promise<CommitView | null> {
+  let sha: string | null = null;
+  try {
+    const commits = [...(await getCommits(river.riverId))].sort((a, b) => b.committedAt - a.committedAt);
+    sha = (commits.find((c) => logbookTrailer(c.trailers)) ?? commits[0])?.sha ?? null;
+  } catch (err) {
+    if (!river.head) throw err;
+  }
+  sha ??= river.head;
+  return sha ? getCommit(river.riverId, sha, river.repo) : null;
+}
+
 export function LogbookScreen({ river, sha, repo, fixtures, now }: LogbookScreenProps): ReactElement {
-  const target = sha ?? river.head ?? undefined;
-  const targetRepo = repo ?? (sha ? undefined : river.repo);
-  const commit = useResource<CommitView | null>(`commit:${river.riverId}:${target ?? ""}:${targetRepo ?? ""}`, {
+  const commit = useResource<CommitView | null>(`commit:${river.riverId}:${sha ?? `default:${river.head ?? ""}`}:${repo ?? ""}`, {
     fixtures,
-    load: () => (target ? getCommit(river.riverId, target, targetRepo) : Promise.resolve(null)),
+    load: () => (sha ? getCommit(river.riverId, sha, repo) : defaultCommit(river)),
     fixture: () => commitFixture(),
   });
 
@@ -354,17 +368,22 @@ function Replay({ commit: c, riverId, fixtures, nextChannel }: { commit: CommitV
     gap: 8,
   } as const;
 
+  // Replay forks a Channel; a commit on main has none to fork.
+  const parsed = parseRepoName(c.repo);
+  const channel = c.channelId ?? (parsed.kind === "channel" ? parsed.channel : null);
+
   const fork = async () => {
     setNote(null);
+    if (!channel) return;
     if (fixtures) {
-      setNote(`Sample data: ${nextChannel} would fork ${c.repo} at ${c.sha.slice(0, 7)} with ${agent} · ${strategy}.`);
+      setNote(`Sample data: ${nextChannel} would fork ${channel} at ${c.sha.slice(0, 7)} with ${agent} · ${strategy}.`);
       return;
     }
     setBusy(true);
     try {
-      const res = await replayFrom(riverId, { repo: c.repo, sha: c.sha, agent, strategy });
-      setNote(`${res?.channelId ?? nextChannel} is forking from ${c.sha.slice(0, 7)}.`);
-      if (c.intentId) navigate({ screen: "river" });
+      const res = await replayChannel(riverId, channel, { sha: c.sha, strategy });
+      setNote(`${res?.channelId ?? res?.id ?? nextChannel} is forking from ${channel} at ${c.sha.slice(0, 7)}.`);
+      navigate({ screen: "river" });
     } catch (err) {
       setNote(`Couldn’t replay: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -378,7 +397,15 @@ function Replay({ commit: c, riverId, fixtures, nextChannel }: { commit: CommitV
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <QuietSelect label="Agent" value={agent} options={REPLAY_AGENTS.map((a) => ({ value: a, label: a }))} onChange={setAgent} style={chip} />
         <QuietSelect label="Strategy" value={strategy} options={STRATEGIES.map((s) => ({ value: s, label: s }))} onChange={setStrategy} style={chip} />
-        <button type="button" className={buttonClass("primary")} style={buttonStyle("primary", "11px 16px", "0.14em")} onClick={fork} disabled={busy} aria-busy={busy}>
+        <button
+          type="button"
+          className={buttonClass("primary")}
+          style={buttonStyle("primary", "11px 16px", "0.14em")}
+          onClick={fork}
+          disabled={busy || !channel}
+          aria-busy={busy}
+          title={channel ? `Fork ${channel} at ${c.sha.slice(0, 7)} into ${nextChannel}` : "Replay starts from a Channel commit"}
+        >
           Fork {nextChannel}
         </button>
       </div>

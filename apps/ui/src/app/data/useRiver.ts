@@ -2,17 +2,21 @@
 // state sync. The RiverAgent is read-only to clients; every change happens server-side
 // and arrives here as a full RiverState.
 //
-// Falls back to fixtures when ?fixtures=1, or when the socket fails before the first
-// state arrives (e.g. `vite dev` without `wrangler dev`). The socket keeps retrying in
-// the background and the screen switches to live data the moment state arrives.
+// If the socket fails before the first state arrives, it polls GET /api/rivers/:id/state
+// instead. Fixtures when ?fixtures=1, or when both fail (e.g. `vite dev` without
+// `wrangler dev`). The socket keeps retrying in the background and the screen switches
+// to live data the moment state arrives.
 import { useAgent } from "agents/react";
 import { useEffect, useMemo, useState } from "react";
 import type { RiverState } from "@braid/protocol";
+import { getRiverState } from "./api.ts";
 import { riverFixture, type RiverFixture } from "./fixtures.ts";
 import { readParams } from "./params.ts";
 
-/** How long to wait for the first state before showing fixtures. */
+/** How long to wait for the first socket state before trying REST. */
 const FIRST_STATE_TIMEOUT_MS = 4000;
+/** REST poll interval while the socket is down. */
+const REST_POLL_MS = 10_000;
 
 export type RiverSource = "live" | "connecting" | "fixtures" | "fallback";
 
@@ -39,6 +43,8 @@ export function useRiver(riverId: string, opts: UseRiverOptions = {}): RiverConn
   const fixtureState = opts.fixtureState ?? "running";
   const [live, setLive] = useState<RiverState | null>(null);
   const [failed, setFailed] = useState(false);
+  const [rest, setRest] = useState<RiverState | null>(null);
+  const [restFailed, setRestFailed] = useState(false);
 
   useAgent<RiverState>({
     agent: "river-agent",
@@ -58,17 +64,42 @@ export function useRiver(riverId: string, opts: UseRiverOptions = {}): RiverConn
   useEffect(() => {
     setLive(null);
     setFailed(false);
+    setRest(null);
+    setRestFailed(false);
     if (fixtures) return;
     const t = setTimeout(() => setFailed(true), FIRST_STATE_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, [riverId, fixtures]);
 
+  // While the socket is down, poll GET /api/rivers/:id/state; fixtures only if that fails too.
+  const hasLive = live !== null;
+  useEffect(() => {
+    if (fixtures || hasLive || !failed) return;
+    let alive = true;
+    const pull = () =>
+      getRiverState(riverId).then(
+        (s) => {
+          if (!alive) return;
+          setRest(s);
+          setRestFailed(false);
+        },
+        () => alive && setRestFailed(true),
+      );
+    void pull();
+    const t = setInterval(pull, REST_POLL_MS);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [fixtures, hasLive, failed, riverId]);
+
   return useMemo((): RiverConnection => {
     if (fixtures) return { state: riverFixture(fixtureState, riverId), source: "fixtures" };
     if (live) return { state: normalize(live, riverId), source: "live" };
-    if (failed) return { state: riverFixture(fixtureState, riverId), source: "fallback" };
+    if (rest) return { state: normalize(rest, riverId), source: "live" };
+    if (failed && restFailed) return { state: riverFixture(fixtureState, riverId), source: "fallback" };
     return { state: placeholder(riverId), source: "connecting" };
-  }, [fixtures, fixtureState, live, failed, riverId]);
+  }, [fixtures, fixtureState, live, rest, failed, restFailed, riverId]);
 }
 
 /** Defensive defaults: the RiverAgent may be mid-migration while other workstreams land. */

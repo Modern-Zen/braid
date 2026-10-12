@@ -14,10 +14,10 @@ import { fixturePreviewDark, riverFixture, scoutFixture, type ScoutFixture } fro
 import { navigate } from "../router.tsx";
 import { ScreenHeader } from "../ScreenHeader.tsx";
 
-/** The Intent Scout should open on: one that's being judged, else the newest running one. */
+/** The Intent Scout should open on: one that's being judged, else the oldest (furthest along) running one. */
 export function preferredIntent(intents: IntentView[]): IntentView | undefined {
   const order = ["eddy", "scouting", "confluence", "running", "open", "merged"];
-  return [...intents].sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status) || b.openedAt - a.openedAt)[0];
+  return [...intents].sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status) || a.openedAt - b.openedAt)[0];
 }
 
 export interface ScoutScreenProps {
