@@ -20,7 +20,9 @@
     "BRAID_BASE_DOMAIN": "braid.drp.icu",
     "AI_GATEWAY_ID": "braid",
     "LIVE_MODEL": "claude-sonnet-5-5",
-    "BRAID_SCRIPTED_SPEED": "1"
+    "BRAID_SCRIPTED_SPEED": "1",
+    // Local dev only: start ReviewWorkflow for pushes (Artifacts events fire only when deployed).
+    "BRAID_SIMULATE_EVENTS": "0"
   },
   "secrets": { "required": ["ADMIN_TOKEN"] },
 

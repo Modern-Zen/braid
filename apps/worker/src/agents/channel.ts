@@ -131,6 +131,23 @@ export class ChannelAgent extends Agent<Env, ChannelState> {
     };
   }
 
+  /**
+   * Local development only (BRAID_SIMULATE_EVENTS=1): Artifacts events fire only for the
+   * deployed Worker, so start ReviewWorkflow with the same cf.artifacts.repo.pushed envelope.
+   */
+  private async simulatePushEvent(config: ChannelConfig, sha: string, before: string): Promise<void> {
+    if ((this.env.BRAID_SIMULATE_EVENTS as string) !== "1") return;
+    await this.env.REVIEW_WF.create({
+      id: `sim-${config.repo}-${sha.slice(0, 12)}`,
+      params: {
+        type: "cf.artifacts.repo.pushed",
+        source: { type: "artifacts.repo", namespace: "braid", repoName: config.repo },
+        payload: { ref: "refs/heads/main", before, after: sha, commits: [], totalCommitsCount: 1, commitsTruncated: false },
+        metadata: { accountId: "local", eventSchemaVersion: 1, eventTimestamp: new Date().toISOString(), simulated: true },
+      },
+    });
+  }
+
   /** Fan updates out to this state, D1, the River map and the feed. */
   private async apply(config: ChannelConfig, updates: AgentUpdate[]): Promise<void> {
     if (updates.length === 0) return;
@@ -142,6 +159,7 @@ export class ChannelAgent extends Agent<Env, ChannelState> {
       if (u.kind === "status") {
         s = { ...s, status: u.status, statusText: u.text, progress: u.progress ?? s.progress };
       } else if (u.kind === "commit") {
+        const before = s.headSha ?? "0".repeat(40);
         s = { ...s, headSha: u.sha, commits: s.commits + 1, marks: [...s.marks, Math.max(0.05, s.progress)] };
         // Same id as the Artifacts event path, so the feed shows each push once.
         await river.recordEvent({
@@ -154,6 +172,7 @@ export class ChannelAgent extends Agent<Env, ChannelState> {
           detail: `${config.channelId} → ${shortSha(u.sha)} · ${u.files} file${u.files === 1 ? "" : "s"}`,
           data: { sha: u.sha, commits: 1, subject: u.subject },
         });
+        await this.simulatePushEvent(config, u.sha, before);
       } else if (u.kind === "cost") {
         s = { ...s, costUsd: u.usd };
       } else if (u.kind === "done") {
