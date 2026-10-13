@@ -19,7 +19,8 @@
     "seed:demo": "tsx scripts/seed-demo.ts",
     "demo": "tsx scripts/demo.ts",
     "reset:demo": "tsx scripts/reset-demo.ts",
-    "patches:bundle": "tsx scripts/bundle-patches.ts"
+    "patches:bundle": "tsx scripts/bundle-patches.ts",
+    "git:setup": "tsx scripts/setup-git-remote.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
