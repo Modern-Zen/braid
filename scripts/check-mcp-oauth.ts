@@ -2,8 +2,12 @@
 // discovery → 401 challenge → dynamic client registration → PKCE authorize (operator session)
 // → token exchange → MCP initialize + river_join with the OAuth token, then with an agent token.
 //
-// PowerShell:
-//   $env:BRAID_URL = "https://braid.modern-zen.workers.dev"; pnpm check:mcp
+// macOS / Linux:
+//   export BRAID_URL="https://braid.drp.icu"
+//   pnpm check:mcp
+// Windows (PowerShell):
+//   $env:BRAID_URL = "https://braid.drp.icu"
+//   pnpm check:mcp
 import { createHash, randomBytes } from "node:crypto";
 import { ADMIN_TOKEN, api, BRAID_URL, fail, ok } from "./lib.ts";
 

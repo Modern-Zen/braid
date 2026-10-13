@@ -6,7 +6,7 @@
 //   npx tsx scripts/scripted-patches/verify.ts --test          # + pnpm test and tsc after each, compared to result.json / meta.tests
 //   npx tsx scripts/scripted-patches/verify.ts --all --keep    # everything; keep the scratch repo and print its path
 //
-// Run from the repo root in PowerShell. Needs git and, for --test, pnpm (it runs
+// Run from the repo root in any shell (zsh, bash or PowerShell). Needs git and, for --test, pnpm (it runs
 // `pnpm install --frozen-lockfile` once in the scratch copy). Exits 1 on any failure.
 
 import { spawnSync, type SpawnSyncOptions } from "node:child_process";

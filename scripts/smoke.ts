@@ -8,9 +8,11 @@
 // --local-git: the Worker creates/forks/issues tokens; your own git does the push.
 //   Useful before the sandbox image is deployed (e.g. against `wrangler dev`).
 //
-// PowerShell:
-//   $env:BRAID_URL = "https://braid.<subdomain>.workers.dev"
-//   $env:BRAID_ADMIN_TOKEN = "<ADMIN_TOKEN>"
+// macOS / Linux:
+//   export BRAID_URL="https://braid.<subdomain>.workers.dev" BRAID_ADMIN_TOKEN="<ADMIN_TOKEN>"
+//   pnpm smoke
+// Windows (PowerShell):
+//   $env:BRAID_URL = "https://braid.<subdomain>.workers.dev"; $env:BRAID_ADMIN_TOKEN = "<ADMIN_TOKEN>"
 //   pnpm smoke
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

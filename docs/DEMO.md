@@ -1,12 +1,26 @@
 # Demo runbook
 
-The 8-minute video from [`PLAN.md` §10](PLAN.md#10-video-outline-8-minutes), scene by scene: what to run, what to click, and which state each shot uses. All commands are PowerShell, run from the repo root.
+The 8-minute video from [`PLAN.md` §10](PLAN.md#10-video-outline-8-minutes), scene by scene: what to run, what to click, and which state each shot uses. Run commands from the repo root. A block without a label runs as is in zsh, bash and PowerShell; where the shells differ there is a **macOS / Linux** block and a **Windows (PowerShell)** block.
 
 ## Before recording
+
+**macOS / Linux**
+
+```sh
+export BRAID_URL="https://braid.drp.icu"
+export BRAID_ADMIN_TOKEN="<ADMIN_TOKEN>"
+```
+
+**Windows (PowerShell)**
 
 ```powershell
 $env:BRAID_URL = "https://braid.drp.icu"
 $env:BRAID_ADMIN_TOKEN = "<ADMIN_TOKEN>"
+```
+
+Then:
+
+```sh
 pnpm reset:demo     # deletes demo forks, clears Intents, force-pushes the seed commit to main
 pnpm seed:demo      # idempotent; deploys the preview base Worker if previews are configured
 pnpm smoke          # optional sanity check: fork, push, readFile, raw event in R2
@@ -42,10 +56,17 @@ pnpm smoke          # optional sanity check: fork, push, readFile, raw event in 
 
 Sign in with OAuth (no token to copy): add the server, start Claude Code, run `/mcp`, choose **headwaters → Authenticate**, and pick the River in the browser.
 
+**macOS / Linux**
+
+```sh
+claude mcp add --transport http headwaters "$BRAID_URL/mcp"
+claude
+```
+
+**Windows (PowerShell)**
+
 ```powershell
 claude mcp add --transport http headwaters "$env:BRAID_URL/mcp"
-```
-```powershell
 claude
 ```
 
@@ -57,7 +78,7 @@ Tools: `river_join`, `intent_list`, `intent_open`, `channel_start`, `line_declar
 
 The scripted Channels replay recorded series of real agent work and carry a `replay` tag in their chips. To show live agents on camera for one Intent:
 
-```powershell
+```sh
 pnpm demo --only dark-mode --mode live
 ```
 
@@ -65,6 +86,6 @@ Requires `CF_ACCOUNT_ID`, `AI_GATEWAY_TOKEN` (and `ANTHROPIC_API_KEY` unless the
 
 ## After recording
 
-```powershell
+```sh
 pnpm reset:demo     # keeps Artifacts usage low (billing starts Oct 14)
 ```

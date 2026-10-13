@@ -12,7 +12,7 @@ Headwaters is a Git platform for the agentic era, built on Cloudflare Workers an
 
 **Headwaters hosts itself.** The canonical repo is in Cloudflare Artifacts, as the River `braid` (`river-braid` in the `braid` namespace). Anyone can clone it, read-only, with no token:
 
-```powershell
+```sh
 git clone https://braid.drp.icu/git/river-braid.git braid
 ```
 
@@ -53,6 +53,22 @@ What building something real on Headwaters looks like. Both projects are illustr
 </picture>
 
 1. **A River and three Intents.** `POST /api/admin/rivers` with `{ "id": "tollgate" }` creates `river-tollgate` in Artifacts; you push the code you have. Then you open three Intents (*Meter API calls per customer*, *Prorate plan changes mid-cycle*, *Build a printable invoice*) with acceptance checks that say what "correct" means for money:
+
+   **macOS / Linux**
+
+   ```sh
+   curl -fsS -X POST "$BRAID_URL/api/rivers/tollgate/intents" \
+     -H "Authorization: Bearer $BRAID_ADMIN_TOKEN" -H "Content-Type: application/json" \
+     -d '{
+       "title": "Prorate plan changes mid-cycle",
+       "goal": "Upgrades and downgrades bill exactly the unused part of the period.",
+       "checks": ["Totals are integer cents, rounded half-even", "A change and its reversal net to zero"],
+       "mode": "live",
+       "strategies": ["minimal-diff", "tests-first", "conservative"]
+     }'
+   ```
+
+   **Windows (PowerShell)**
 
    ```powershell
    $h = @{ Authorization = "Bearer $env:BRAID_ADMIN_TOKEN" }
@@ -125,25 +141,27 @@ scripts/                 sync-design, smoke, seed-demo, demo, reset-demo
 
 ## Run it yourself
 
-All commands are PowerShell.
+Commands work on macOS, Linux and Windows. A block without a label runs as is in zsh, bash and PowerShell; where the shells differ (environment variables, writing a file, HTTP calls) there is a **macOS / Linux** block and a **Windows (PowerShell)** block.
 
 ### Prerequisites
 
 - A Cloudflare account on **Workers Paid**, with **Artifacts** (open beta), **Containers**, and **R2** enabled.
 - Optional: **AI Gateway** (gateway named `braid`) for live agents, **Cloudflare Access** for the app, **Workers for Platforms** for per-Channel previews.
-- Node 22+, pnpm (via `corepack enable`), Git, and **Docker Desktop** running (Wrangler builds the sandbox image on deploy).
+- Node 22+, pnpm (via `corepack enable`), Git, and a running **Docker** engine: Wrangler builds the sandbox image on deploy.
+  - **macOS:** `brew install node git`, then `npm install -g corepack` before `corepack enable` (recent Node releases no longer bundle Corepack; it pins pnpm to the `packageManager` version). Docker Desktop or OrbStack for Docker. Apple silicon works: Wrangler builds the image for `linux/amd64` and Docker emulates it, which is slower the first time.
+  - **Windows:** Node 22+ and Git for Windows, plus Docker Desktop (WSL 2 backend).
 
 ### One click
 
 Use the **Deploy to Cloudflare** button above. It copies this repo into your GitHub account, provisions D1, R2, KV and the queue, builds the UI and the sandbox image with Workers Builds, and asks for `ADMIN_TOKEN`. Your account needs **Workers Paid** (Artifacts and Containers). If the build complains about pnpm, set the build variable `PNPM_VERSION=11.18.0`. Then, optionally, subscribe the queue to account-level Artifacts events (the app works without it; the feed records forks directly):
 
-```powershell
+```sh
 npx wrangler queues subscription create braid-artifacts-events --source artifacts --events "repo.created,repo.forked,repo.deleted,repo.imported"
 ```
 
 ### Setup from zero
 
-```powershell
+```sh
 git clone https://github.com/Modern-Zen/braid
 cd braid
 corepack enable
@@ -175,6 +193,16 @@ The Artifacts namespace `braid` is created automatically with the first repo.
 
 ### Smoke test
 
+**macOS / Linux**
+
+```sh
+export BRAID_URL="https://braid.<your-subdomain>.workers.dev"
+export BRAID_ADMIN_TOKEN="<the ADMIN_TOKEN you set>"
+pnpm smoke
+```
+
+**Windows (PowerShell)**
+
 ```powershell
 $env:BRAID_URL = "https://braid.<your-subdomain>.workers.dev"
 $env:BRAID_ADMIN_TOKEN = "<the ADMIN_TOKEN you set>"
@@ -184,6 +212,15 @@ pnpm smoke
 `pnpm smoke` creates `braid-smoke`, forks it, issues a token, clones and pushes inside a Sandbox, reads the commit back with `readFile`, and waits for the raw `cf.artifacts.repo.pushed` event in R2. Use `pnpm smoke --local-git` to push with your own Git instead of a Sandbox (works against `pnpm dev` too).
 
 ### Local development
+
+**macOS / Linux**
+
+```sh
+echo "ADMIN_TOKEN=dev-$(openssl rand -hex 16)" > .dev.vars
+pnpm dev            # builds the UI, then wrangler dev on http://localhost:8787
+```
+
+**Windows (PowerShell)**
 
 ```powershell
 "ADMIN_TOKEN=dev-$(Get-Random)" | Set-Content .dev.vars
@@ -196,13 +233,13 @@ Local dev uses the remote Artifacts binding (real repos) and local D1/R2/Durable
 
 The Claude Design export lives at the repo root and is never edited by hand. After a re-export:
 
-```powershell
+```sh
 pnpm design:sync    # copies headwaters-tokens.css and fonts/ into apps/ui
 ```
 
 ### Demo River
 
-```powershell
+```sh
 pnpm seed:demo      # creates river-riverlevels from apps/demo-riverlevels
 pnpm demo           # opens the three demo Intents (9 Channels)
 pnpm reset:demo     # deletes the demo forks
@@ -229,12 +266,25 @@ Headwaters speaks MCP over Streamable HTTP at `https://<your-headwaters>/mcp`. E
 
 The source of truth is `river-braid` in Artifacts. With an operator token for the deployment:
 
+**macOS / Linux**
+
+```sh
+export BRAID_URL="https://braid.drp.icu"
+export BRAID_ADMIN_TOKEN="<ADMIN_TOKEN>"
+pnpm git:setup              # adds the `headwaters` remote and a credential helper (10-minute tokens, nothing stored)
+git push headwaters main
+```
+
+**Windows (PowerShell)**
+
 ```powershell
 $env:BRAID_URL = "https://braid.drp.icu"
 $env:BRAID_ADMIN_TOKEN = "<ADMIN_TOKEN>"
 pnpm git:setup              # adds the `headwaters` remote and a credential helper (10-minute tokens, nothing stored)
 git push headwaters main
 ```
+
+The credential helper asks the deployment for a token each time Git needs one. It remembers the URL (git config `headwaters.url`), but the shell you push from needs `BRAID_ADMIN_TOKEN`, or put `ADMIN_TOKEN=<ADMIN_TOKEN>` in `.braid/prod.secrets` (gitignored).
 
 ## License
 

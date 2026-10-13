@@ -58,6 +58,6 @@ Every pair's `notes` follow the same rule: presentation and theme from dark mode
 refactor's hook. Where dark mode's rewrite had its own formatting table, the hook's formatting
 wins.
 
-```powershell
+```sh
 npx tsx scripts/scripted-patches/verify.ts --conflicts --resolutions --test
 ```

@@ -3,7 +3,10 @@
 // Creates the demo River `riverlevels` (Artifacts repo river-riverlevels) and pushes
 // apps/demo-riverlevels as its main. --force re-pushes the seed commit over main.
 //
-// PowerShell:
+// macOS / Linux:
+//   export BRAID_URL="https://braid.<subdomain>.workers.dev" BRAID_ADMIN_TOKEN="<ADMIN_TOKEN>"
+//   pnpm seed:demo
+// Windows (PowerShell):
 //   $env:BRAID_URL = "https://braid.<subdomain>.workers.dev"; $env:BRAID_ADMIN_TOKEN = "<ADMIN_TOKEN>"
 //   pnpm seed:demo
 import { api, BRAID_URL, git, ok } from "./lib.ts";

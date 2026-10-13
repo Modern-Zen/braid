@@ -3,7 +3,10 @@
 // Adds the `headwaters` remote (the River's main repo in Artifacts) and wires the credential
 // helper, so `git push headwaters main` just works. Run once per clone.
 //
-// PowerShell:
+// macOS / Linux:
+//   export BRAID_URL="https://braid.drp.icu" BRAID_ADMIN_TOKEN="<ADMIN_TOKEN>"
+//   pnpm git:setup
+// Windows (PowerShell):
 //   $env:BRAID_URL = "https://braid.drp.icu"; $env:BRAID_ADMIN_TOKEN = "<ADMIN_TOKEN>"
 //   pnpm git:setup
 import { execFileSync } from "node:child_process";

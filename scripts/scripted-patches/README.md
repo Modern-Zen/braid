@@ -100,7 +100,7 @@ sha still works.
 
 ## Verify
 
-```powershell
+```sh
 npx tsx scripts/scripted-patches/verify.ts                       # every series applies with git am
 npx tsx scripts/scripted-patches/verify.ts --conflicts           # cross-Intent merge matrix
 npx tsx scripts/scripted-patches/verify.ts --resolutions --test  # resolutions in both orders, pnpm test and tsc

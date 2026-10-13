@@ -15,7 +15,7 @@ The Claude Design export lives at the **repo root**. It is the Claude Design syn
 
 **View locally:**
 
-```powershell
+```sh
 npx serve .
 # then open http://localhost:3000/Headwaters%20App.dc.html
 ```

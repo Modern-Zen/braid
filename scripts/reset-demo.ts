@@ -4,7 +4,10 @@
 // Confluence fork (keeps Artifacts usage low), clears Intents, and force-pushes the seed
 // commit back to main.
 //
-// PowerShell:
+// macOS / Linux:
+//   export BRAID_URL="https://braid.<subdomain>.workers.dev" BRAID_ADMIN_TOKEN="<ADMIN_TOKEN>"
+//   pnpm reset:demo
+// Windows (PowerShell):
 //   $env:BRAID_URL = "https://braid.<subdomain>.workers.dev"; $env:BRAID_ADMIN_TOKEN = "<ADMIN_TOKEN>"
 //   pnpm reset:demo
 import { api, BRAID_URL, git, ok } from "./lib.ts";

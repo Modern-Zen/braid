@@ -3,7 +3,10 @@
 // Opens the three demo Intents at once (3 Channels each, 9 agents) and, with --watch,
 // prints the River's live feed until every Intent has merged or needs you.
 //
-// PowerShell:
+// macOS / Linux:
+//   export BRAID_URL="https://braid.<subdomain>.workers.dev" BRAID_ADMIN_TOKEN="<ADMIN_TOKEN>"
+//   pnpm demo --watch
+// Windows (PowerShell):
 //   $env:BRAID_URL = "https://braid.<subdomain>.workers.dev"; $env:BRAID_ADMIN_TOKEN = "<ADMIN_TOKEN>"
 //   pnpm demo --watch
 import type { FeedEvent, RiverState } from "@braid/protocol";

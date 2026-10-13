@@ -337,14 +337,14 @@ Written Oct 12 with the decisions in §11: `prompts/claude-design.md` and `promp
 - The Artifacts API surface *verbatim from the docs* (so it doesn't hallucinate methods), plus an explicit note that diff/merge happen in the Sandbox
 - Build order matching §8, with acceptance tests per milestone
 - `BRAID_AGENT_MODE=scripted|live` requirement
-- Rules: PowerShell for every local command in docs and README; MIT license; no secrets in repo; log raw Artifacts events to R2 on day 1
+- Rules: every local command in docs and README for both macOS/Linux (zsh, bash) and Windows (PowerShell); MIT license; no secrets in repo; log raw Artifacts events to R2 on day 1
 - Deliverables: working deploy, seed script that creates the demo River + 3 Intents, README with run instructions, `docs/ARCHITECTURE.md`
 
 ---
 
-## 13. Account setup (run first, PowerShell)
+## 13. Account setup (run first; any shell)
 
-```powershell
+```sh
 # Log in to the Modern Zen account (sedale@drp.icu) in the browser prompt
 npx wrangler@latest login
 npx wrangler whoami            # confirm the Modern Zen account ID

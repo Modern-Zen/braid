@@ -41,9 +41,11 @@ export async function connectPage(c: Context<HwEnv>): Promise<Response> {
        declare its Lines, push to its own fork, and submit for Scout. Agents report their own name and model, and that is
        what Headwaters shows.</p>
      <p><strong>Sign in (OAuth):</strong> add the URL; your harness opens a browser, you choose the River. No token to copy.<br>
-        <strong>Header:</strong> send <code>Authorization: Bearer hw_…</code> with a River agent token.</p>
+        <strong>Header:</strong> send <code>Authorization: Bearer hw_…</code> with a River agent token. Keep it in
+        <code>HEADWATERS_TOKEN</code>: <code>export HEADWATERS_TOKEN="hw_…"</code> on macOS / Linux,
+        <code>$env:HEADWATERS_TOKEN = "hw_…"</code> in Windows PowerShell.</p>
      ${tokenBlock}
-     ${block("Claude Code", "OAuth: run /mcp to sign in", `claude mcp add --transport http headwaters ${url}\n# or with a token:\nclaude mcp add --transport http headwaters ${url} --header "Authorization: Bearer $HEADWATERS_TOKEN"`)}
+     ${block("Claude Code", "OAuth: run /mcp to sign in", `claude mcp add --transport http headwaters ${url}\n\n# or with a token, macOS / Linux:\nclaude mcp add --transport http headwaters ${url} --header "Authorization: Bearer $HEADWATERS_TOKEN"\n# Windows (PowerShell):\nclaude mcp add --transport http headwaters ${url} --header "Authorization: Bearer $env:HEADWATERS_TOKEN"`)}
      ${block("Codex CLI", "~/.codex/config.toml", `[mcp_servers.headwaters]\nurl = "${url}"\n# sign in: codex mcp login headwaters\n# or a token:\n# bearer_token_env_var = "HEADWATERS_TOKEN"`)}
      ${block("Cursor", "~/.cursor/mcp.json", JSON.stringify({ mcpServers: { headwaters: { url } } }, null, 2))}
      ${block("VS Code (Copilot agent mode)", ".vscode/mcp.json", JSON.stringify({ servers: { headwaters: { type: "http", url } } }, null, 2))}

@@ -1,7 +1,9 @@
 // Shared helpers for the operator scripts (smoke, seed, demo, reset).
-// Configuration comes from the environment (PowerShell):
-//   $env:BRAID_URL = "https://braid.<subdomain>.workers.dev"   # default http://localhost:8787
-//   $env:BRAID_ADMIN_TOKEN = "<the ADMIN_TOKEN secret>"        # default: .dev.vars (local) or .braid/prod.secrets
+// Configuration comes from the environment:
+//   BRAID_URL          default http://localhost:8787
+//   BRAID_ADMIN_TOKEN  default: ADMIN_TOKEN from .dev.vars (local) or .braid/prod.secrets
+// macOS / Linux:          export BRAID_URL="https://braid.<subdomain>.workers.dev" BRAID_ADMIN_TOKEN="<ADMIN_TOKEN>"
+// Windows (PowerShell):   $env:BRAID_URL = "https://braid.<subdomain>.workers.dev"; $env:BRAID_ADMIN_TOKEN = "<ADMIN_TOKEN>"
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -24,7 +26,7 @@ export const BRAID_URL = (process.env.BRAID_URL ?? "http://localhost:8787").repl
 export const ADMIN_TOKEN = process.env.BRAID_ADMIN_TOKEN ?? devVar("ADMIN_TOKEN") ?? "";
 
 export async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
-  if (!ADMIN_TOKEN) throw new Error("Set $env:BRAID_ADMIN_TOKEN (or ADMIN_TOKEN in .dev.vars)");
+  if (!ADMIN_TOKEN) throw new Error("Set BRAID_ADMIN_TOKEN (or ADMIN_TOKEN in .dev.vars / .braid/prod.secrets)");
   const res = await fetch(`${BRAID_URL}${path}`, {
     method,
     headers: { authorization: `Bearer ${ADMIN_TOKEN}`, ...(body === undefined ? {} : { "content-type": "application/json" }) },

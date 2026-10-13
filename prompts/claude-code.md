@@ -67,7 +67,7 @@ GitHub coordinates scarce human hands. Agents make hands abundant; the scarce re
 - **Source:** GitHub `Modern-Zen/braid`, **MIT** license (already in repo).
 - **Live agent runtime:** Claude Code headless (`claude -p … --output-format stream-json`) inside Cloudflare **Sandbox** containers, with Anthropic traffic routed through **AI Gateway** (`braid` gateway).
 - **Artifacts namespace:** `braid`.
-- **Shell:** the developer is on Windows. **Every command you write in docs, README, scripts' usage text, or instructions to me must be PowerShell**, never bash. Inside Sandbox containers (Linux), shell scripts are fine.
+- **Shell:** the developer is on Windows; testers are on macOS too. **Every command you write in docs, README, scripts' usage text, or in-app snippets must work on both.** A block that runs unchanged in zsh, bash and PowerShell is written once; where the shells differ (environment variables, writing files, HTTP calls) give a **macOS / Linux** block and a **Windows (PowerShell)** block. Instructions to the developer are PowerShell. Inside Sandbox containers (Linux), shell scripts are fine.
 
 ## 3. Stack
 
@@ -229,7 +229,7 @@ The shared contract is `packages/protocol`. Change it only with a note in the PR
 - Small typed modules; React is the only UI framework. Use `using` for Artifacts repo handles.
 - Handle Artifacts errors specifically (`NOT_FOUND`, `INVALID_INPUT`, etc.); no blanket catches that hide auth or missing-repo failures.
 - Authorize every route. `/app` and `/api` (human) go behind Cloudflare Access; agents use scoped bearer tokens; `/` is public. Never return a write token to the browser.
-- Secrets via `wrangler secret put` (PowerShell examples in README); `.dev.vars` is gitignored.
+- Secrets via `wrangler secret put` (examples in README for both shells); `.dev.vars` is gitignored.
 - Idempotency keys on everything event-driven.
 - Commit early and often; open PRs per milestone on `Modern-Zen/braid`.
 - **Git on this Windows folder:** if git reports `File exists` on a `.lock` file under `.git`, a previous process left it behind. Rename it (`Move-Item .git\index.lock .git\stale-index-lock`) rather than deleting, and tell me.
@@ -238,7 +238,7 @@ The shared contract is `packages/protocol`. Change it only with a note in the PR
 ## 12. Deliverables
 
 1. Deployed at `braid.drp.icu` (or workers.dev): landing page at `/`, app at `/app`, demo River seeded
-2. `README.md`: what it is (3 sentences), the five ideas, a screenshot of Scout, architecture diagram, **PowerShell** setup from zero (account prerequisites: Workers Paid, Artifacts, Containers/Sandbox, Workers for Platforms namespace, AI Gateway, Access), `pnpm design:sync`, `pnpm seed:demo`, `pnpm demo`, and the scripted vs live mode explanation
+2. `README.md`: what it is (3 sentences), the five ideas, a screenshot of Scout, architecture diagram, setup from zero for macOS/Linux and Windows (PowerShell) (account prerequisites: Workers Paid, Artifacts, Containers/Sandbox, Workers for Platforms namespace, AI Gateway, Access), `pnpm design:sync`, `pnpm seed:demo`, `pnpm demo`, and the scripted vs live mode explanation
 3. `docs/ARCHITECTURE.md`: event flow, Artifacts naming scheme, trailers, Logbook format
 4. `docs/DEMO.md`: the runbook for the video in `docs/PLAN.md` §10, with exact clicks, commands, and which state each scene uses
 5. MIT license, no secrets, public repo
