@@ -117,7 +117,8 @@ export function toFeedEvent(e: ArtifactsEvent): FeedEvent | null {
     case "cf.artifacts.repo.created": {
       const parsed = parseRepoName(e.source.repoName);
       if (parsed.kind !== "main") return null;
-      return { id: eventKey(e), type: "river.created", at, riverId: parsed.river, detail: `${parsed.river} · ${e.source.repoName}` };
+      // Same id as createRiver's event, so the River is announced once.
+      return { id: `river.created:${parsed.river}`, type: "river.created", at, riverId: parsed.river, detail: `${parsed.river} · ${e.source.repoName}` };
     }
     default:
       return null;

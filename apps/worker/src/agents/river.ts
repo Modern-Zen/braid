@@ -184,7 +184,8 @@ export class RiverAgent extends Agent<Env, RiverState> {
    */
   async declareLines(args: DeclareLinesArgs): Promise<LineDeclareResult> {
     const globs = [...new Set(args.globs.map(normalizeGlob))];
-    const live = this.liveLines();
+    // Channels of the same Intent are alternative attempts: they are meant to touch the same files.
+    const live = this.liveLines().filter((l) => !args.intentId || !l.intentId || l.intentId !== args.intentId);
     const overlaps = findOverlaps(args.channelId, globs, live);
     const contested = new Set(overlaps.map((o) => o.ours));
     const now = Date.now();
@@ -207,28 +208,29 @@ export class RiverAgent extends Agent<Env, RiverState> {
       });
     }
 
-    const newOverlaps: ChannelOverlap[] = [];
-    for (const o of overlaps) {
-      const exists = this.state.overlaps.some(
-        (x) => x.path === o.path && ((x.a === o.channelId && x.b === args.channelId) || (x.a === args.channelId && x.b === o.channelId)),
-      );
-      if (!exists && !newOverlaps.some((x) => x.a === o.channelId && x.path === o.path)) {
-        newOverlaps.push({ a: o.channelId, b: args.channelId, path: o.path, at: now });
-      }
+    // One overlap per Channel pair, named by its most telling path.
+    const byChannel = new Map<string, string[]>();
+    for (const o of overlaps) byChannel.set(o.channelId, [...(byChannel.get(o.channelId) ?? []), o.path]);
+    const newOverlaps: Array<ChannelOverlap & { more: number }> = [];
+    for (const [other, paths] of byChannel) {
+      const exists = this.state.overlaps.some((x) => (x.a === other && x.b === args.channelId) || (x.a === args.channelId && x.b === other));
+      if (exists) continue;
+      const unique = [...new Set(paths)].sort((x, y) => pathRank(y) - pathRank(x));
+      newOverlaps.push({ a: other, b: args.channelId, path: unique[0]!, at: now, more: unique.length - 1 });
     }
     for (const o of newOverlaps) {
       await this.recordEvent({
-        id: `line.conflict:${o.a}:${o.b}:${o.path}`,
+        id: `line.conflict:${[o.a, o.b].sort().join(":")}`,
         type: "line.conflict",
         at: now,
         riverId: this.name,
         intentId: args.intentId,
         channelId: args.channelId,
-        detail: `${o.a} ↔ ${o.b} · ${o.path}`,
+        detail: `${o.a} ↔ ${o.b} · ${o.path}${o.more > 0 ? ` +${o.more}` : ""}`,
         data: { a: o.a, b: o.b, path: o.path },
       });
     }
-    this.setState({ ...this.state, lines: this.liveLines(), overlaps: [...this.state.overlaps, ...newOverlaps] });
+    this.setState({ ...this.state, lines: this.liveLines(), overlaps: [...this.state.overlaps, ...newOverlaps.map(({ more: _more, ...o }) => o)] });
 
     return {
       ok: overlaps.length === 0,
@@ -311,4 +313,13 @@ export class RiverAgent extends Agent<Env, RiverState> {
     this.sql`INSERT INTO presence (channel_id, agent, model, seen_at) VALUES (${channelId}, ${agent}, ${model ?? null}, ${Date.now()})
       ON CONFLICT(channel_id) DO UPDATE SET agent = excluded.agent, model = excluded.model, seen_at = excluded.seen_at`;
   }
+}
+
+/** How telling a path is for an overlap: a literal source file beats a test file beats a glob. */
+function pathRank(p: string): number {
+  let r = 0;
+  if (!/[*?{]/.test(p)) r += 4;
+  if (/^src\//.test(p)) r += 2;
+  if (/(^|\/)(test|tests|__tests__)\/|\.test\./.test(p)) r -= 3;
+  return r + p.split("/").length * 0.01;
 }
