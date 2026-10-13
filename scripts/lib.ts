@@ -9,8 +9,10 @@ import { fileURLToPath } from "node:url";
 
 export const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
+/** Local runs read apps/worker/.dev.vars; the deployed Worker's operator token lives in .braid/prod.secrets. */
 function devVar(name: string): string | undefined {
-  const file = join(repoRoot, "apps", "worker", ".dev.vars");
+  const local = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/.test(process.env.BRAID_URL ?? "http://localhost:8787");
+  const file = local ? join(repoRoot, "apps", "worker", ".dev.vars") : join(repoRoot, ".braid", "prod.secrets");
   if (!existsSync(file)) return undefined;
   const line = readFileSync(file, "utf8")
     .split(/\r?\n/)
