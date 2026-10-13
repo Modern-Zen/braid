@@ -25,7 +25,15 @@ try {
 }
 git("config", "headwaters.url", BRAID_URL);
 git("config", `credential.${host}.useHttpPath`, "true");
-git("config", `credential.${host}.helper`, `!"${tsx}" "${helper}"`);
+// An empty value resets the helper list for this host, so a system helper (e.g. Git
+// Credential Manager) doesn't try to prompt first.
+try {
+  git("config", "--unset-all", `credential.${host}.helper`);
+} catch {
+  // not set yet
+}
+git("config", "--add", `credential.${host}.helper`, "");
+git("config", "--add", `credential.${host}.helper`, `!"${tsx}" "${helper}"`);
 ok(`remote headwaters → ${remote}`);
 ok(`credential helper for ${host} (10-minute tokens via ${BRAID_URL})`);
 console.log("Push with: git push headwaters main");
