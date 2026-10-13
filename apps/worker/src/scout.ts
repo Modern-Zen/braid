@@ -220,10 +220,13 @@ function summarize(c: Candidate): string {
   return `${c.channel.id} (${c.channel.strategy}) changes ${r.files} files (+${r.added} −${r.removed}) and passes ${r.tests_passed}/${r.tests_total} tests at risk ${r.risk?.toFixed(2)}.`;
 }
 
-/** "Add a dark mode" → "a dark mode"; otherwise the title itself. */
-function pickNoun(title: string): string {
-  const m = /^(?:add|build|create|make)\s+(.+)$/i.exec(title);
-  return m ? m[1]! : `an approach for "${title}"`;
+/** "Add a dark mode" → "a dark mode"; "Refactor the gauge component" → "a refactor of the gauge component". */
+export function pickNoun(title: string): string {
+  const add = /^(?:add|build|create|make)\s+(.+)$/i.exec(title);
+  if (add) return add[1]!;
+  const verb = /^(refactor|rewrite|redesign|fix|improve|speed up|clean up)\s+(.+)$/i.exec(title);
+  if (verb) return `a ${verb[1]!.toLowerCase()} of ${verb[2]}`;
+  return `an approach for ${title.charAt(0).toLowerCase()}${title.slice(1)}`;
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
