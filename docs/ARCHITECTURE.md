@@ -35,6 +35,11 @@ subscription per fork would be needed. Instead, a single `triggers.events` entry
 starts `ReviewWorkflow` for a push to *any* repo in the `braid` namespace. Account-level events use a
 Queues subscription on the `artifacts` source.
 
+Observed shapes (raw copies in R2 under `events/`): a Queues delivery carries
+`{ type, source: { type, namespace, repoName }, payload, metadata }`; a `triggers.events` Workflow
+instance receives `{ id, type, source: { namespace, repoName }, payload }` as its payload, with no
+`metadata`. `src/events.ts` accepts both.
+
 Everything event-driven is idempotent: pushes are keyed by `(repo, after)`, feed events by their `id`.
 
 ## Artifacts naming (namespace `braid`)

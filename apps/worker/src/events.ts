@@ -8,12 +8,17 @@
 import { getAgentByName } from "agents";
 import { parseRepoName, shortSha, type FeedEvent } from "@braid/protocol";
 
-/** The envelope Artifacts emits. Field names follow what actually arrives; see R2 events/. */
+/**
+ * The envelope Artifacts emits. Field names follow what actually arrives (see R2 events/):
+ * via a Queues subscription it carries `metadata` and `source.type`; via a `triggers.events`
+ * Workflow it arrives as the instance payload `{ id, type, source: { namespace, repoName }, payload }`.
+ */
 export interface ArtifactsEvent {
+  id?: string;
   type: string; // "cf.artifacts.repo.pushed"
-  source: { type: string; namespace: string; repoName: string };
+  source: { type?: string; namespace: string; repoName: string };
   payload: Record<string, unknown>;
-  metadata: {
+  metadata?: {
     accountId: string;
     eventSubscriptionId?: string;
     eventSchemaVersion: number;
@@ -46,7 +51,7 @@ export function asArtifactsEvent(raw: unknown): ArtifactsEvent | null {
     return r as unknown as ArtifactsEvent;
   }
   // Some deliveries nest the event (e.g. { event: {...} } or { payload: {...} }).
-  for (const key of ["event", "payload", "body", "data"]) {
+  for (const key of ["workflowEvent", "event", "payload", "body", "data"]) {
     const inner = asArtifactsEvent(r[key]);
     if (inner) return inner;
   }
