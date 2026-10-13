@@ -5,12 +5,12 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "types": "wrangler types",
+    "dev": "wrangler dev -c ../../wrangler.jsonc",
+    "deploy": "wrangler deploy -c ../../wrangler.jsonc",
+    "types": "wrangler types -c ../../wrangler.jsonc ./worker-configuration.d.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "db:migrate": "wrangler d1 migrations apply braid --remote",
-    "db:migrate:local": "wrangler d1 migrations apply braid --local",
+    "db:migrate": "wrangler d1 migrations apply DB --remote -c ../../wrangler.jsonc",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local -c ../../wrangler.jsonc",
     "test": "vitest run"
   },
   "dependencies": {
@@ -18,6 +18,7 @@
     "@braid/protocol": "workspace:*",
     "@cloudflare/puppeteer": "^1.4.0",
     "@cloudflare/sandbox": "1.0.0",
+    "@cloudflare/workers-oauth-provider": "1.2.3",
     "@modelcontextprotocol/server": "2.0.0",
     "agents": "0.28.0",
     "hono": "^4.10.0",

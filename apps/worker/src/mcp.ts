@@ -1,10 +1,10 @@
-// MCP server at /mcp. External agents of any vendor join a River here, take an Intent,
-// declare Lines, write their Logbook, push to their own fork, and submit for Scout.
-// Auth: a per-River bearer token (POST /api/admin/rivers/:id/agent-token). Agents
-// self-report their name and model; that is what the UI shows for their Channel.
+// MCP server at /mcp (Streamable HTTP). External agents of any vendor and any harness join a
+// River here, take an Intent, declare Lines, write their Logbook, push to their own fork, and
+// submit for Scout. Agents self-report their name and model; that is what the UI shows.
 //
-// Tool names use underscores (river_join, line_declare, …): Claude's API rejects dots in
-// tool names, and the MCP spec recommends [A-Za-z0-9_-].
+// Auth (see oauth.ts): OAuth 2.1 with dynamic client registration for clients that sign in,
+// or a River agent token (`Authorization: Bearer hw_…`) for harnesses that send headers.
+// Either way the request arrives here with props { riverId, client }.
 import { createMcpHandler } from "agents/mcp/server";
 import { McpServer } from "@modelcontextprotocol/server";
 import { getAgentByName } from "agents";
@@ -58,25 +58,30 @@ export async function issueAgentToken(env: Env, riverId: string, label: string):
   return token;
 }
 
-async function riverForToken(env: Env, request: Request): Promise<string | null> {
-  const m = /^Bearer\s+(hw_[a-z0-9-]+_[0-9a-f]{48})$/i.exec(request.headers.get("authorization") ?? "");
-  if (!m) return null;
-  const row = await env.DB.prepare("SELECT river_id, token_hash FROM river_tokens WHERE token_hash = ? AND revoked_at IS NULL")
-    .bind(await sha256Hex(m[1]!))
-    .first<{ river_id: string; token_hash: string }>();
-  if (!row || !timingSafeEqual(row.token_hash, await sha256Hex(m[1]!))) return null;
-  return row.river_id;
+/** What an authorized MCP request carries (OAuth grant props or a River agent token). */
+export interface McpProps {
+  riverId: string;
+  client: string;
 }
 
-export async function handleMcp(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-  const riverId = await riverForToken(env, request);
-  if (!riverId) {
-    return new Response(JSON.stringify({ error: "unauthorized: use a River agent token (Authorization: Bearer hw_…)" }), {
-      status: 401,
-      headers: { "content-type": "application/json", "www-authenticate": 'Bearer realm="headwaters"' },
-    });
-  }
-  const handler = createMcpHandler(() => buildServer(env, riverId), { route: "/mcp" });
+/** A River agent token (`hw_<river>_<48 hex>`) → its River, if valid and not revoked. */
+export async function riverForAgentToken(env: Env, token: string): Promise<string | null> {
+  if (!/^hw_[a-z0-9-]+_[0-9a-f]{48}$/i.test(token)) return null;
+  const hash = await sha256Hex(token);
+  const row = await env.DB.prepare("SELECT river_id, token_hash FROM river_tokens WHERE token_hash = ? AND revoked_at IS NULL")
+    .bind(hash)
+    .first<{ river_id: string; token_hash: string }>();
+  return row && timingSafeEqual(row.token_hash, hash) ? row.river_id : null;
+}
+
+export async function handleMcp(request: Request, env: Env, ctx: ExecutionContext, props: McpProps | undefined): Promise<Response> {
+  if (!props?.riverId) return Response.json({ error: "unauthorized" }, { status: 401 });
+  const host = new URL(request.url).hostname;
+  const handler = createMcpHandler(() => buildServer(env, props.riverId), {
+    route: "/mcp",
+    allowedHostnames: [host],
+    allowedOriginHostnames: [host],
+  });
   return handler(request, env, ctx);
 }
 
@@ -98,11 +103,17 @@ function buildServer(env: Env, riverId: string): McpServer {
   ) => {
     const def = McpTools[name];
     server.registerTool(
-      name.replace(".", "_"),
-      { description: def.description, inputSchema: z.object(def.input as z.ZodRawShape) },
+      name,
+      {
+        title: def.title,
+        description: def.description,
+        inputSchema: z.object(def.input as z.ZodRawShape),
+        annotations: { title: def.title, readOnlyHint: def.readOnly, destructiveHint: false, openWorldHint: false },
+      },
       async (args: unknown) => {
-        const a = args as { river?: string };
+        const a = args as { river?: string; channel?: string };
         if (a.river && a.river !== riverId) return fail(`This token is for River "${riverId}", not "${a.river}".`);
+        if (a.channel !== undefined && !/^ch-\d+$/.test(a.channel)) return fail(`"${a.channel}" is not a Channel id (like ch-10).`);
         try {
           return await handler(args as never);
         } catch (err) {
@@ -112,7 +123,7 @@ function buildServer(env: Env, riverId: string): McpServer {
     );
   };
 
-  tool("river.join", async ({ agent, model }) => {
+  tool("river_join", async ({ agent, model }) => {
     const river = await getRiver(env.DB, riverId);
     if (!river) return fail(`No River "${riverId}"`);
     const agentsMd = (await readText(env.ARTIFACTS, river.mainRepo, "main", "AGENTS.md").catch(() => null)) ?? "";
@@ -127,7 +138,7 @@ function buildServer(env: Env, riverId: string): McpServer {
     });
   });
 
-  tool("intent.list", async () => {
+  tool("intent_list", async () => {
     const intents = await listIntents(env.DB, riverId);
     const channels = await listChannels(env.DB, riverId);
     return text(
@@ -142,13 +153,15 @@ function buildServer(env: Env, riverId: string): McpServer {
     );
   });
 
-  tool("intent.open", async ({ title, goal, checks }) => {
+  tool("intent_open", async ({ title, goal, checks }) => {
     // External agents open the Intent without Headwaters fanning out; they take it with channel_start.
-    const { intent } = await openIntent(env, riverId, { title, goal, checks, strategies: [], mode: "live" });
+    const { intent } = await openIntent(env, riverId, { title, goal, checks: checks ?? [], strategies: [], mode: "live" });
     return text({ intent: intent.id, title: intent.title, next: "Call channel_start with this intent." });
   });
 
-  tool("channel.start", async ({ intent: intentId, strategy, agent, model }) => {
+  tool("channel_start", async ({ intent: intentId, strategy: requested, agent, model }) => {
+    const strategy = requested ?? "minimal-diff";
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(intentId)) return fail(`"${intentId}" is not an Intent id; call intent_list.`);
     const river = await getRiver(env.DB, riverId);
     const intent = await getIntent(env.DB, riverId, intentId);
     if (!river || !intent) return fail(`No Intent "${intentId}" on ${riverId}`);
@@ -216,19 +229,19 @@ function buildServer(env: Env, riverId: string): McpServer {
     });
   });
 
-  tool("line.declare", async ({ channel, globs, note }) => {
+  tool("line_declare", async ({ channel, globs, note }) => {
     const ch = await getChannel(env.DB, riverId, channel);
     if (!ch) return fail(`No Channel ${channel}`);
     const r = await getAgentByName(env.RiverAgent, riverId);
     return text(await r.declareLines({ channelId: channel, intentId: ch.intentId, globs, note }));
   });
 
-  tool("line.release", async ({ channel, globs }) => {
+  tool("line_release", async ({ channel, globs }) => {
     const r = await getAgentByName(env.RiverAgent, riverId);
     return text({ ok: true, released: await r.releaseLines(channel, globs) });
   });
 
-  tool("logbook.write", async ({ channel, plan, decisions, rejected, notes }) => {
+  tool("logbook_write", async ({ channel, plan, decisions, rejected, notes }) => {
     const ch = await getChannel(env.DB, riverId, channel);
     if (!ch) return fail(`No Channel ${channel}`);
     const lb = await env.DB.prepare("SELECT number, path FROM logbook_index WHERE river_id = ? AND channel_id = ?")
@@ -243,13 +256,13 @@ function buildServer(env: Env, riverId: string): McpServer {
       meta: { intent: ch.intentId, channel, agent: ch.agent, model: ch.model ?? "", strategy: ch.strategy },
       plan,
       decisions,
-      rejected,
-      notes,
+      rejected: rejected ?? [],
+      notes: notes ?? "",
     });
     return text({ path: lb.path, content: markdown, next: "Write this file at the path, commit it with your last commit, push." });
   });
 
-  tool("channel.submit", async ({ channel, costUsd }) => {
+  tool("channel_submit", async ({ channel, costUsd }) => {
     const ch = await getChannel(env.DB, riverId, channel);
     if (!ch) return fail(`No Channel ${channel}`);
     await updateChannel(env.DB, riverId, channel, { status: "done", statusText: "submitted", costUsd });
@@ -258,7 +271,7 @@ function buildServer(env: Env, riverId: string): McpServer {
     return text({ ok: true, next: "Scout compares your Channel once every Channel of the Intent is finished and reviewed." });
   });
 
-  tool("river.ask", async ({ question }) => {
+  tool("river_ask", async ({ question }) => {
     const words = question.toLowerCase().match(/[a-z0-9/]{3,}/g) ?? [];
     const { results } = await env.DB.prepare("SELECT number, channel_id, intent_id, agent, plan, decisions FROM logbook_index WHERE river_id = ? AND plan IS NOT NULL")
       .bind(riverId)

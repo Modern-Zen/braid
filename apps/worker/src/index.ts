@@ -2,7 +2,10 @@
 //   /            landing page (static assets, public)
 //   /app/*       the app (static assets; human routes sit behind Cloudflare Access)
 //   /api/*       REST
-//   /mcp         MCP server for agents (M8)
+//   /mcp         MCP server for agents (Streamable HTTP; OAuth 2.1 or a River agent token)
+//   /authorize, /oauth/*, /.well-known/*  OAuth for MCP clients
+//   /connect     how to connect any agent harness
+//   /git/*       public, read-only Git for allowlisted repos
 //   /ws/river/:id  live River socket (RiverAgent)
 //   /health      liveness
 import { Hono } from "hono";
@@ -11,8 +14,9 @@ import { endSession, requireAdmin, requireHuman, startSession, whoami, type HwEn
 import { handleArtifactsQueue } from "./events.ts";
 import { prepareSmoke, runSmoke, verifySmoke } from "./smoke.ts";
 import { adminRivers, httpErrorStatus, rivers } from "./routes/rivers.ts";
-import { handleMcp } from "./mcp.ts";
 import { handleGit } from "./git-proxy.ts";
+import { connectPage } from "./connect.ts";
+import { authorize, providerFor } from "./oauth.ts";
 
 export { RiverAgent } from "./agents/river.ts";
 export { ChannelAgent } from "./agents/channel.ts";
@@ -92,8 +96,9 @@ app.get("/ws/river/:id", requireHuman, async (c) => {
 // ── Public, read-only Git for allowlisted repos (Headwaters hosts its own source) ─
 app.on(["GET", "POST"], "/git/*", (c) => handleGit(c.req.raw, c.env));
 
-// ── MCP: external agents join a River with a per-River bearer token ──────────
-app.all("/mcp", (c) => handleMcp(c.req.raw, c.env, c.executionCtx as ExecutionContext));
+// ── MCP: /mcp itself is served by the OAuth provider (see oauth.ts) ──────────
+app.on(["GET", "POST"], "/authorize", (c) => authorize(c));
+app.get("/connect", (c) => connectPage(c));
 
 // ── App shell: /app/* serves the app entry for client-side routes ─────────────
 app.get("/app", (c) => c.redirect("/app/", 301));
@@ -112,7 +117,10 @@ app.onError((err, c) => {
   return c.json({ error: "internal error" }, 500);
 });
 
+const web = { fetch: (req: Request, env: Env, ctx: ExecutionContext) => app.fetch(req, env, ctx) };
+
 export default {
-  fetch: app.fetch,
+  // The OAuth provider guards /mcp and serves the OAuth endpoints; everything else goes to `app`.
+  fetch: (req, env, ctx) => providerFor(new URL(req.url).origin, web).fetch(req, env, ctx),
   queue: handleArtifactsQueue,
 } satisfies ExportedHandler<Env>;

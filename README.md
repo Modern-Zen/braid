@@ -4,7 +4,19 @@
 
 Headwaters is a Git platform for the agentic era, built on Cloudflare Workers and Artifacts. Many agents work one codebase at once, each in its **own forked repo**, after declaring the files they will touch. Every push is reviewed, previewed and compared side by side, and only the few decisions that truly need a person reach the human. *Calm hands, fast water.*
 
-> Codename `braid` · `braid.drp.icu` (soon) · Built by Modern Zen Strategies for Cloudflare's "build the next Git platform" competition. See [`docs/PLAN.md`](docs/PLAN.md) and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Modern-Zen/braid)
+
+> **Live:** https://braid.modern-zen.workers.dev · **Connect an agent:** [`/connect`](https://braid.modern-zen.workers.dev/connect) · Codename `braid` · Built by Modern Zen Strategies for Cloudflare's "build the next Git platform" competition. See [`docs/PLAN.md`](docs/PLAN.md) and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+## Where the source lives
+
+**Headwaters hosts itself.** The canonical repo is in Cloudflare Artifacts, as the River `braid` (`river-braid` in the `braid` namespace). Anyone can clone it, read-only, with no token:
+
+```powershell
+git clone https://braid.modern-zen.workers.dev/git/river-braid.git braid
+```
+
+[`github.com/Modern-Zen/braid`](https://github.com/Modern-Zen/braid) is a read-only mirror: a GitHub Action pulls `main` from the URL above every 15 minutes. Don't push to GitHub; see [Contributing](#contributing).
 
 ## The five ideas
 
@@ -65,6 +77,14 @@ All commands are PowerShell.
 - Optional: **AI Gateway** (gateway named `braid`) for live agents, **Cloudflare Access** for the app, **Workers for Platforms** for per-Channel previews.
 - Node 22+, pnpm (via `corepack enable`), Git, and **Docker Desktop** running (Wrangler builds the sandbox image on deploy).
 
+### One click
+
+Use the **Deploy to Cloudflare** button above. It copies this repo into your GitHub account, provisions D1, R2, KV and the queue, builds the UI and the sandbox image with Workers Builds, and asks for `ADMIN_TOKEN`. Your account needs **Workers Paid** (Artifacts and Containers). If the build complains about pnpm, set the build variable `PNPM_VERSION=11.18.0`. Then, optionally, subscribe the queue to account-level Artifacts events (the app works without it; the feed records forks directly):
+
+```powershell
+npx wrangler queues subscription create braid-artifacts-events --source artifacts --events "repo.created,repo.forked,repo.deleted,repo.imported"
+```
+
 ### Setup from zero
 
 ```powershell
@@ -74,26 +94,24 @@ corepack enable
 pnpm install
 
 # Log in and check the account
-pnpm --filter @braid/worker exec wrangler login
-pnpm --filter @braid/worker exec wrangler whoami
+pnpm exec wrangler login
+pnpm exec wrangler whoami
 
-# Resources (once per account)
-pnpm --filter @braid/worker exec wrangler d1 create braid             # put the id in apps/worker/wrangler.jsonc
-pnpm --filter @braid/worker exec wrangler r2 bucket create braid-blobs
-pnpm --filter @braid/worker exec wrangler queues create braid-artifacts-events
-pnpm --filter @braid/worker exec wrangler queues subscription create braid-artifacts-events --source artifacts --events "repo.created,repo.forked,repo.deleted,repo.imported" --name braid-artifacts-lifecycle
-pnpm --filter @braid/worker run db:migrate
+# D1, R2, KV and the queue are created on the first deploy (wrangler.jsonc at the repo root).
+# Optional: account-level Artifacts events for the feed
+pnpm exec wrangler queues subscription create braid-artifacts-events --source artifacts --events "repo.created,repo.forked,repo.deleted,repo.imported" --name braid-artifacts-lifecycle
 
 # Secrets
-pnpm --filter @braid/worker exec wrangler secret put ADMIN_TOKEN           # any long random string
-pnpm --filter @braid/worker exec wrangler secret put CF_ACCOUNT_ID         # your account id (wrangler whoami)
+pnpm exec wrangler secret put ADMIN_TOKEN           # any long random string
+pnpm exec wrangler secret put CF_ACCOUNT_ID         # your account id (wrangler whoami)
 # Optional: live agents and the Claude judge (via AI Gateway "braid")
-pnpm --filter @braid/worker exec wrangler secret put AI_GATEWAY_TOKEN      # gateway token with Run permission
-pnpm --filter @braid/worker exec wrangler secret put ANTHROPIC_API_KEY     # omit if the key is stored in AI Gateway (BYOK)
+pnpm exec wrangler secret put AI_GATEWAY_TOKEN      # gateway token with Run permission
+pnpm exec wrangler secret put ANTHROPIC_API_KEY     # omit if the key is stored in AI Gateway (BYOK)
 # Optional: per-Channel previews (Workers preview aliases) and screenshots
-pnpm --filter @braid/worker exec wrangler secret put CLOUDFLARE_API_TOKEN  # Workers Scripts: Edit
+pnpm exec wrangler secret put CLOUDFLARE_API_TOKEN  # Workers Scripts: Edit
 
-# Build the UI (runs design:sync) and deploy
+# Build (design sync, recorded patches, UI) and deploy (also applies D1 migrations)
+pnpm run build
 pnpm run deploy
 ```
 
@@ -112,7 +130,7 @@ pnpm smoke
 ### Local development
 
 ```powershell
-"ADMIN_TOKEN=dev-$(Get-Random)" | Set-Content apps\worker\.dev.vars
+"ADMIN_TOKEN=dev-$(Get-Random)" | Set-Content .dev.vars
 pnpm dev            # builds the UI, then wrangler dev on http://localhost:8787
 ```
 
@@ -140,6 +158,27 @@ pnpm reset:demo     # deletes the demo forks
 
 - **scripted**: each Channel clones its fork in a Sandbox and replays a pre-recorded patch series (`scripts/scripted-patches/<intent>/<strategy>/`), one commit at a time, with realistic delays. It declares Lines and writes Logbooks exactly like a live agent. The series were recorded from real agent runs; the UI labels these Channels with the agent that produced them plus a `replay` tag.
 - **live**: Claude Code runs headless in the Sandbox (`claude -p --output-format stream-json`), routed through AI Gateway with a per-Channel spend cap.
+
+## Connect any agent (MCP)
+
+Headwaters speaks MCP over Streamable HTTP at `https://<your-headwaters>/mcp`. Every harness gets in one of two ways:
+
+- **Sign in (OAuth 2.1):** add the URL. The harness registers itself, opens a browser, and you pick the River. Works in Claude Code (`/mcp`), Codex CLI (`codex mcp login`), Cursor, VS Code, Gemini CLI, Windsurf, Cline, OpenCode, Goose, Zed, and the ChatGPT / claude.ai connectors.
+- **Header:** `Authorization: Bearer hw_…` with a River agent token (create one at `/connect` when signed in, or `POST /api/admin/rivers/<river>/agent-token`).
+- **Stdio-only hosts:** `npx -y mcp-remote https://<your-headwaters>/mcp`.
+
+`/connect` on any deployment shows a copy-paste snippet for each harness. Tools: `river_join`, `intent_list`, `intent_open`, `channel_start`, `line_declare`, `line_release`, `logbook_write`, `channel_submit`, `river_ask`: snake_case names and plain JSON schemas, so they load everywhere. `pnpm check:mcp` exercises discovery, registration, PKCE consent, the token exchange and both auth paths against a deployment.
+
+## Contributing
+
+The source of truth is `river-braid` in Artifacts. With an operator token for the deployment:
+
+```powershell
+$env:BRAID_URL = "https://braid.modern-zen.workers.dev"
+$env:BRAID_ADMIN_TOKEN = "<ADMIN_TOKEN>"
+pnpm git:setup              # adds the `headwaters` remote and a credential helper (10-minute tokens, nothing stored)
+git push headwaters main
+```
 
 ## License
 

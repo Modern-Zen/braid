@@ -37,33 +37,33 @@ export const requireAdmin: MiddlewareHandler<HwEnv> = async (c, next) => {
   await next();
 };
 
-/** Humans via Cloudflare Access, or the admin bearer. */
-export const requireHuman: MiddlewareHandler<HwEnv> = async (c, next) => {
-  if (isAdmin(c)) {
-    c.set("principal", { kind: "admin" });
-    return next();
-  }
+/** Who is this person? Access JWT, operator session cookie, admin bearer, or local dev. Null if nobody. */
+export async function resolveHuman(c: Context<HwEnv>): Promise<Principal | null> {
+  if (isAdmin(c)) return { kind: "admin" };
   const env = c.env as AuthEnv;
   // Local `wrangler dev` has no Access in front of it.
   if (!env.ACCESS_TEAM_DOMAIN && ["localhost", "127.0.0.1"].includes(new URL(c.req.url).hostname)) {
-    c.set("principal", { kind: "human", email: "local@localhost" });
-    return next();
+    return { kind: "human", email: "local@localhost" };
   }
   const jwt = c.req.header("cf-access-jwt-assertion");
   if (env.ACCESS_TEAM_DOMAIN && env.ACCESS_AUD && jwt) {
     const claims = await verifyAccessJwt(jwt, env.ACCESS_TEAM_DOMAIN, env.ACCESS_AUD);
-    if (claims?.email) {
-      c.set("principal", { kind: "human", email: claims.email });
-      return next();
-    }
+    if (claims?.email) return { kind: "human", email: claims.email };
   }
   // Operator session (before Access is set up): cookie set by POST /api/session.
   const cookie = /(?:^|;\s*)hw_session=([0-9a-f]{64})/.exec(c.req.header("cookie") ?? "")?.[1];
   if (cookie && c.env.ADMIN_TOKEN && timingSafeEqual(cookie, await sessionValue(c.env.ADMIN_TOKEN))) {
-    c.set("principal", { kind: "human", email: "operator" });
-    return next();
+    return { kind: "human", email: "operator" };
   }
-  return c.json({ error: "unauthorized" }, 401);
+  return null;
+}
+
+/** Humans via Cloudflare Access, the operator session, or the admin bearer. */
+export const requireHuman: MiddlewareHandler<HwEnv> = async (c, next) => {
+  const principal = await resolveHuman(c);
+  if (!principal) return c.json({ error: "unauthorized" }, 401);
+  c.set("principal", principal);
+  await next();
 };
 
 /** The operator session cookie value: HMAC of a fixed label under ADMIN_TOKEN (rotates with it). */

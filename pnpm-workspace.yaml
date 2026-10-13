@@ -9,3 +9,9 @@ allowBuilds:
   workerd: true
   sharp: true
   core-js-pure: false
+
+# pnpm 10 (e.g. the Workers Builds image) reads this list; pnpm 11 reads allowBuilds above.
+onlyBuiltDependencies:
+  - esbuild
+  - workerd
+  - sharp

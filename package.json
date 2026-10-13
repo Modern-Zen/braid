@@ -11,8 +11,8 @@
   "scripts": {
     "design:sync": "tsx scripts/sync-design.ts",
     "build": "pnpm design:sync && pnpm patches:bundle && pnpm --filter @braid/ui build",
-    "dev": "pnpm build && pnpm --filter @braid/worker dev",
-    "deploy": "pnpm build && pnpm --filter @braid/worker run deploy",
+    "dev": "pnpm run build && wrangler dev",
+    "deploy": "wrangler deploy && wrangler d1 migrations apply DB --remote",
     "typecheck": "pnpm -r typecheck && tsc -p scripts",
     "test": "pnpm -r test",
     "smoke": "tsx scripts/smoke.ts",
@@ -20,14 +20,41 @@
     "demo": "tsx scripts/demo.ts",
     "reset:demo": "tsx scripts/reset-demo.ts",
     "patches:bundle": "tsx scripts/bundle-patches.ts",
-    "git:setup": "tsx scripts/setup-git-remote.ts"
+    "git:setup": "tsx scripts/setup-git-remote.ts",
+    "db:migrate": "wrangler d1 migrations apply DB --remote",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "types": "wrangler types apps/worker/worker-configuration.d.ts",
+    "check:mcp": "tsx scripts/check-mcp-oauth.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "tsx": "^4.20.0",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "wrangler": "4.149.0"
   },
   "dependencies": {
     "@braid/protocol": "workspace:*"
+  },
+  "cloudflare": {
+    "bindings": {
+      "ADMIN_TOKEN": {
+        "description": "Operator token for the admin API, the scripts (`pnpm seed:demo`, `pnpm smoke`) and app sign-in before Cloudflare Access. Use a long random string."
+      },
+      "ARTIFACTS": {
+        "description": "Cloudflare Artifacts (open beta, Workers Paid). Every River, Channel and Confluence repo lives in the `braid` namespace."
+      },
+      "DB": {
+        "description": "D1 index of Rivers, Intents, Channels, reviews, verdicts and Eddy cards."
+      },
+      "BLOBS": {
+        "description": "R2: raw Artifacts events, test logs, transcripts, diffs and preview screenshots."
+      },
+      "OAUTH_KV": {
+        "description": "OAuth 2.1 state for MCP clients that sign in (ChatGPT, claude.ai, Cursor, VS Code, \u2026)."
+      },
+      "EVENTS_QUEUE": {
+        "description": "Queue for account-level Artifacts events (created / forked / deleted / imported)."
+      }
+    }
   }
 }

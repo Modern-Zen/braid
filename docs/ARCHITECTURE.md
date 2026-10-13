@@ -103,3 +103,28 @@ transcript: "transcripts/riverlevels/ch-5.jsonl"
 Risk bands follow the gauge: `< 0.40` low (teal), `0.40–0.59` mid (grey), `≥ 0.60` high (amber).
 Auto-merge only when risk `< 0.60`, tests are green, and the judge is confident. Everything else becomes
 an Eddy card: `pick` (tie between Channels), `approve` (high-risk change), `confirm` (merge resolution).
+
+## MCP and OAuth
+
+`/mcp` is a stateless Streamable HTTP MCP server (`createMcpHandler`, MCP SDK v2) wrapped by
+`@cloudflare/workers-oauth-provider`, built per origin so the token audience is the canonical
+`https://<host>/mcp`:
+
+- **OAuth 2.1** for clients that sign in: discovery at `/.well-known/oauth-protected-resource/mcp` and
+  `/.well-known/oauth-authorization-server`, dynamic client registration at `/oauth/register`, PKCE (S256)
+  at `/authorize` (sign in with Access or the operator session, pick the River), tokens at `/oauth/token`.
+  Grants carry `{ riverId, client }` as props; state lives in KV (`OAUTH_KV`).
+- **River agent tokens** (`hw_<river>_<hex>`, hashed in D1) for harnesses that send an `Authorization`
+  header, accepted through `resolveExternalToken`.
+
+Tool names are snake_case without dots and schemas are plain (no `pattern`, `format` or `default`), so the
+same server loads in Claude Code, Codex, Cursor, VS Code, Gemini CLI, Windsurf, Cline, OpenCode, Goose, Zed
+and the ChatGPT / claude.ai connectors. `/connect` lists the per-harness configuration.
+
+## Headwaters hosts itself
+
+The source is the River `braid` (`river-braid`). `/git/<repo>.git` serves allowlisted repos (`PUBLIC_REPOS`)
+read-only over smart HTTP: the Worker forwards `git-upload-pack` to the Artifacts remote with a short-lived
+read token it holds, and refuses `git-receive-pack`. GitHub (`Modern-Zen/braid`) mirrors `main` from that
+endpoint with a scheduled Action (`.github/workflows/mirror.yml`). Contributors push to Artifacts through a
+credential helper that mints 10-minute tokens (`pnpm git:setup`).

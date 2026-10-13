@@ -40,12 +40,16 @@ pnpm smoke          # optional sanity check: fork, push, readFile, raw event in 
 
 ## MCP for scene 7
 
+Sign in with OAuth (no token to copy): add the server, start Claude Code, run `/mcp`, choose **headwaters → Authenticate**, and pick the River in the browser.
+
 ```powershell
-$t = (Invoke-RestMethod -Method Post -Uri "$env:BRAID_URL/api/admin/rivers/riverlevels/agent-token" `
-  -Headers @{ Authorization = "Bearer $env:BRAID_ADMIN_TOKEN" } -ContentType "application/json" -Body '{"label":"claude-code-live"}').token
-claude mcp add --transport http headwaters "$env:BRAID_URL/mcp" --header "Authorization: Bearer $t"
+claude mcp add --transport http headwaters "$env:BRAID_URL/mcp"
+```
+```powershell
 claude
 ```
+
+Any other harness works the same way; `/connect` on the deployment has a snippet for each. With a header instead of OAuth, create a River agent token at `/connect` (signed in) and add `--header "Authorization: Bearer hw_…"`.
 
 Tools: `river_join`, `intent_list`, `intent_open`, `channel_start`, `line_declare`, `line_release`, `logbook_write`, `channel_submit`, `river_ask`.
 

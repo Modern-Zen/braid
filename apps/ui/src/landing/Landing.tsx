@@ -399,14 +399,14 @@ function ForAgents(): ReactElement {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, marginTop: 32 }}>
         <CodePanel label="MCP">
           <div>
-            <Accent>river.join</Accent>({"{"} river: "riverlevels" {"}"})
+            <Accent>river_join</Accent>({"{"} agent: "claude-code", model: "…" {"}"})
           </div>
           <div>
-            <Accent>channel.start</Accent>({"{"} intent: "Add a dark mode",
+            <Accent>channel_start</Accent>({"{"} intent: "dark-mode",
           </div>
-          <div style={{ paddingLeft: "7.2em" }}>agent: "claude-code" {"}"})</div>
+          <div style={{ paddingLeft: "7.2em" }}>agent: "claude-code", model: "…" {"}"})</div>
           <div>
-            <Accent>line.declare</Accent>({"{"} files: ["src/theme/*",
+            <Accent>line_declare</Accent>({"{"} channel: "ch-10", globs: ["src/theme/*",
           </div>
           <div style={{ paddingLeft: "7.2em" }}>"src/components/Gauge.tsx"] {"}"})</div>
         </CodePanel>
@@ -424,6 +424,10 @@ function ForAgents(): ReactElement {
       </div>
       <p style={{ margin: "24px 0 0", fontFamily: "var(--hw-font-display)", fontStyle: "italic", fontSize: 20, color: "var(--hw-color-ink-2)" }}>
         Agents already know Git. Headwaters speaks it.
+      </p>
+      <p style={{ margin: "12px 0 0", fontSize: 15, color: "var(--hw-color-ink-3)" }}>
+        Any harness that speaks MCP can join: Claude Code, Codex, Cursor, VS Code, Gemini CLI, Windsurf, ChatGPT and more.{" "}
+        <a href="/connect">Connect an agent →</a>
       </p>
     </section>
   );

@@ -1,7 +1,9 @@
+// Headwaters Worker. The config lives at the repo root so the Deploy to Cloudflare button
+// (and Workers Builds) can build the whole pnpm workspace: `pnpm run build` then `pnpm run deploy`.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "braid",
-  "main": "src/index.ts",
+  "main": "apps/worker/src/index.ts",
   "compatibility_date": "2026-10-12",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
@@ -10,9 +12,9 @@
 
   // Landing at /, the app at /app/*. The Worker runs first for everything dynamic.
   "assets": {
-    "directory": "../ui/dist",
+    "directory": "apps/ui/dist",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/mcp", "/mcp/*", "/ws/*", "/git/*", "/health", "/app", "/app/*"]
+    "run_worker_first": ["/api/*", "/mcp", "/mcp/*", "/ws/*", "/git/*", "/health", "/app", "/app/*", "/authorize", "/oauth/*", "/.well-known/*", "/connect"]
   },
 
   "vars": {
@@ -26,7 +28,12 @@
     // Repos anyone can clone read-only at /git/<repo>.git (Headwaters' own source, the demo).
     "PUBLIC_REPOS": "river-braid,river-riverlevels"
   },
-  "secrets": { "required": ["ADMIN_TOKEN"] },
+  // Secrets (none required to deploy; see .dev.vars.example):
+  //   ADMIN_TOKEN           operator token: scripts, admin API, app sign-in before Access
+  //   CF_ACCOUNT_ID         optional; derived from Artifacts remotes when unset
+  //   AI_GATEWAY_TOKEN      live agents + the Claude judge (AI Gateway "braid")
+  //   ANTHROPIC_API_KEY     unless the key is stored in AI Gateway (BYOK)
+  //   CLOUDFLARE_API_TOKEN  per-Channel preview uploads (Workers Scripts: Edit)
 
   // One namespace for every River, Channel and Confluence repo.
   "artifacts": [{ "binding": "ARTIFACTS", "namespace": "braid", "remote": true }],
@@ -49,7 +56,7 @@
     {
       "class_name": "AgentSandbox",
       "scheduling_policy": "durable_object",
-      "images": { "agent": { "dockerfile": "../../sandbox/Dockerfile" } }
+      "images": { "agent": { "dockerfile": "sandbox/Dockerfile" } }
     }
   ],
 
@@ -71,19 +78,18 @@
 
   // Account-level Artifacts events (created / forked / deleted / imported) arrive here
   // through a Queues event subscription. See docs/ARCHITECTURE.md.
+  // The producer binding lets `wrangler deploy` provision the queue on a fresh account
+  // (consumer-only queues are never auto-created).
   "queues": {
+    "producers": [{ "binding": "EVENTS_QUEUE", "queue": "braid-artifacts-events" }],
     "consumers": [{ "queue": "braid-artifacts-events", "max_batch_size": 25, "max_batch_timeout": 2 }]
   },
 
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "braid",
-      "database_id": "fcd52234-81e7-49de-b085-4f1a31340d35",
-      "migrations_dir": "migrations"
-    }
-  ],
+  // No ids: `wrangler deploy` finds these by name, or creates them on a fresh account.
+  "d1_databases": [{ "binding": "DB", "database_name": "braid", "migrations_dir": "migrations" }],
   "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "braid-blobs" }],
+  // OAuth 2.1 for MCP clients (grants, client registrations, tokens).
+  "kv_namespaces": [{ "binding": "OAUTH_KV" }],
   "ai": { "binding": "AI" },
   "browser": { "binding": "BROWSER" }
 }

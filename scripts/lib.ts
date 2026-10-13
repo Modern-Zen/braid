@@ -1,7 +1,7 @@
 // Shared helpers for the operator scripts (smoke, seed, demo, reset).
 // Configuration comes from the environment (PowerShell):
 //   $env:BRAID_URL = "https://braid.<subdomain>.workers.dev"   # default http://localhost:8787
-//   $env:BRAID_ADMIN_TOKEN = "<the ADMIN_TOKEN secret>"        # default: apps/worker/.dev.vars
+//   $env:BRAID_ADMIN_TOKEN = "<the ADMIN_TOKEN secret>"        # default: .dev.vars (local) or .braid/prod.secrets
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -9,10 +9,10 @@ import { fileURLToPath } from "node:url";
 
 export const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-/** Local runs read apps/worker/.dev.vars; the deployed Worker's operator token lives in .braid/prod.secrets. */
+/** Local runs read .dev.vars; the deployed Worker's operator token lives in .braid/prod.secrets. */
 function devVar(name: string): string | undefined {
   const local = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/.test(process.env.BRAID_URL ?? "http://localhost:8787");
-  const file = local ? join(repoRoot, "apps", "worker", ".dev.vars") : join(repoRoot, ".braid", "prod.secrets");
+  const file = local ? join(repoRoot, ".dev.vars") : join(repoRoot, ".braid", "prod.secrets");
   if (!existsSync(file)) return undefined;
   const line = readFileSync(file, "utf8")
     .split(/\r?\n/)
@@ -24,7 +24,7 @@ export const BRAID_URL = (process.env.BRAID_URL ?? "http://localhost:8787").repl
 export const ADMIN_TOKEN = process.env.BRAID_ADMIN_TOKEN ?? devVar("ADMIN_TOKEN") ?? "";
 
 export async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
-  if (!ADMIN_TOKEN) throw new Error("Set $env:BRAID_ADMIN_TOKEN (or ADMIN_TOKEN in apps/worker/.dev.vars)");
+  if (!ADMIN_TOKEN) throw new Error("Set $env:BRAID_ADMIN_TOKEN (or ADMIN_TOKEN in .dev.vars)");
   const res = await fetch(`${BRAID_URL}${path}`, {
     method,
     headers: { authorization: `Bearer ${ADMIN_TOKEN}`, ...(body === undefined ? {} : { "content-type": "application/json" }) },

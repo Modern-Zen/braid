@@ -13,7 +13,7 @@ import {
 import { deleteRepoIfExists, mintToken, repoInfo } from "../artifacts.ts";
 import type { HwEnv } from "../auth.ts";
 import { commitView } from "../commits.ts";
-import { deleteRiverWork, getChannel, getIntent, listChannels, listRivers, setIntentStatus } from "../db.ts";
+import { deleteRiverWork, getChannel, getIntent, getRiver, listChannels, listRivers, setIntentStatus } from "../db.ts";
 import { decide, eddyView } from "../eddy.ts";
 import { issueAgentToken } from "../mcp.ts";
 import { deployMain } from "../preview.ts";
@@ -83,6 +83,15 @@ rivers.post("/:id/intents/:intent/pick", async (c) => {
   const river = await getAgentByName(c.env.RiverAgent, riverId);
   await river.setIntentStatus(intentId, "confluence");
   return c.json({ ok: true, queued: await river.enqueueMerge({ intentId, channelId, by: "you" }) });
+});
+
+/** A River agent token for an MCP harness that sends headers (signed-in people, shown once). */
+rivers.post("/:id/agent-token", async (c) => {
+  const riverId = c.req.param("id");
+  if (!(await getRiver(c.env.DB, riverId))) throw new HttpError(404, `No River "${riverId}"`);
+  const principal = c.get("principal");
+  const label = principal.kind === "human" ? `agent for ${principal.email}` : "agent";
+  return c.json({ river: riverId, token: await issueAgentToken(c.env, riverId, label) }, 201);
 });
 
 /** Replay from commit: fork a Channel at a commit into a new live Channel. */
