@@ -85,16 +85,30 @@ export async function repoInfo(artifacts: Artifacts, name: string): Promise<Arti
   }
 }
 
-/** Fork `source` into `target`. Fails if `target` exists; callers decide whether to reuse or delete. */
+/**
+ * Fork `source` into `target`. Fails if `target` exists; callers decide whether to reuse or delete.
+ * Deletes are asynchronous: a just-deleted name still answers ALREADY_EXISTS for a few seconds
+ * while it no longer resolves, so that case is retried.
+ */
 export async function forkRepo(
   artifacts: Artifacts,
   source: string,
   target: string,
   description?: string,
+  waitForNameMs = 45_000,
 ): Promise<RepoRef> {
-  using repo = await artifacts.get(source);
-  const forked = await repo.fork(target, { description, defaultBranchOnly: true, readOnly: false });
-  return { name: forked.name, remote: forked.remote, defaultBranch: forked.defaultBranch };
+  const start = Date.now();
+  for (let delay = 500; ; delay = Math.min(delay * 2, 4000)) {
+    try {
+      using repo = await artifacts.get(source);
+      const forked = await repo.fork(target, { description, defaultBranchOnly: true, readOnly: false });
+      return { name: forked.name, remote: forked.remote, defaultBranch: forked.defaultBranch };
+    } catch (err) {
+      if (artifactsErrorCode(err) !== "ALREADY_EXISTS" || Date.now() - start > waitForNameMs) throw err;
+      if (await repoInfo(artifacts, target)) throw err; // a live repo really has this name
+    }
+    await new Promise((r) => setTimeout(r, delay));
+  }
 }
 
 export async function mintToken(
