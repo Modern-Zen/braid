@@ -39,6 +39,62 @@ git clone https://braid.drp.icu/git/river-braid.git braid
 | Logbook | Per-change *why*, stored in the repo, numbered per River |
 | Eddy | Human inbox of decision cards (pick / approve / confirm) |
 
+## Two stories
+
+What building something real on Headwaters looks like. Both projects are illustrations, not recorded runs, but every step uses a feature in this repo and every card is worded the way the Eddy words it. Diagrams: `pnpm walkthroughs:render`.
+
+### Tollgate: usage-based billing where every cent has a reason
+
+*You run a two-person API company. Your first enterprise customer signs next month, and you need metering, proration and invoices before then. Billing is the one place you can't afford a clever bug.*
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/walkthroughs/tollgate-dark.svg">
+  <img alt="The Tollgate River: three Intents fan out to eight Channels. Three merge, two after a decision; Lines flag ch-5 and ch-8 both declaring src/billing/money.ts." src="docs/walkthroughs/tollgate-light.svg">
+</picture>
+
+1. **A River and three Intents.** `POST /api/admin/rivers` with `{ "id": "tollgate" }` creates `river-tollgate` in Artifacts; you push the code you have. Then you open three Intents (*Meter API calls per customer*, *Prorate plan changes mid-cycle*, *Build a printable invoice*) with acceptance checks that say what "correct" means for money:
+
+   ```powershell
+   $h = @{ Authorization = "Bearer $env:BRAID_ADMIN_TOKEN" }
+   $intent = @{
+     title      = "Prorate plan changes mid-cycle"
+     goal       = "Upgrades and downgrades bill exactly the unused part of the period."
+     checks     = @("Totals are integer cents, rounded half-even", "A change and its reversal net to zero")
+     mode       = "live"
+     strategies = @("minimal-diff", "tests-first", "conservative")
+   } | ConvertTo-Json
+   Invoke-RestMethod -Method Post "$env:BRAID_URL/api/rivers/tollgate/intents" -Headers $h -ContentType "application/json" -Body $intent
+   ```
+
+   Each strategy becomes a Channel: its own fork, its own Sandbox, its own short-lived token. No agent can touch main or another agent's attempt.
+2. **Lines before code.** ch-5 declares `src/billing/proration.ts` and `src/billing/money.ts`. Later, Codex joins *Build a printable invoice* over MCP and its `line_declare` comes back `ok: false`: ch-5 already holds `money.ts`. The shoal appears on the River map within a second. Codex narrows its Lines and imports `formatCents` instead of editing it, so the two never collide.
+3. **Scout, not diff reading.** All three proration Channels finish. Scout lines them up: tests, diffstat, cost, risk and each Logbook. The judge puts ch-5 first, the only one with a property test that a change and its reversal net to zero; ch-4 used floats and ch-6 rounded twice.
+4. **Two cards, both about money.** Metering (ch-1) merges on its own: low risk, green tests, a confident judge. The other two wait for you:
+   - **Approve a high-risk change.** ch-5 changes how every invoice total is computed, and the risk model scores it 0.66. At 0.60 and above Confluence won't merge on its own. The card carries the reasons, the test count and a pointer to Logbook 0005. You read one page and click **Approve**.
+   - **Pick a printable invoice.** ch-7 and Codex's ch-8 both pass and the judge calls a tie: a dense ledger against a summary that folds line items by meter. With previews on, Scout shows both invoices rendered. You pick ch-8.
+5. **Six weeks later**, a customer asks why their invoice says $41.67 and not $41.66. Your support agent asks the River over MCP (`river_ask`: *"why half-even rounding?"*) and gets Logbook 0005, whose *Decisions* section explains it. The merge commit says the same in its trailers: `Headwaters-Intent`, `Headwaters-Channel: ch-5`, `Headwaters-Risk: 0.66`, `Logbook: 0005`.
+
+**Why it fits:** billing wants several careful attempts more than one fast one, and forks make attempts cheap and isolated. Lines turn "two agents edited `money.ts`" from a merge-day surprise into a one-second warning. The Eddy asked twice, both times about money. And the *why* is versioned next to the code it explains.
+
+### Paper Boats: a browser game where taste is the test
+
+*You're making a small browser game: fold a paper boat and ride an endless braided river. Tests can tell you the river generator never leaves a gap. They can't tell you whether the water looks right or steering feels good.*
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/walkthroughs/paperboats-dark.svg">
+  <img alt="The Paper Boats River: four Intents and ten Channels, including a replay of ch-5 and a Gemini CLI Channel joined over MCP. Three decisions: a water shader, a merge conflict on src/world/current.ts, and a high-risk soundtrack change." src="docs/walkthroughs/paperboats-light.svg">
+</picture>
+
+1. **Breadth is cheap.** *Generate an endless braided river* fans out to three strategies. ch-2 (rewrite) grows the river as an L-system of channels that split and rejoin, passes the seam tests (chunks tile with no gaps) and wins outright. No card.
+2. **Taste goes to a person.** *Add a water shader*: ch-4's ink-wash flow map and ch-5's toon shader both pass, and the judge won't choose between looks. With previews on, every Channel is a running Worker preview (`ch-4-paperboats.<subdomain>.workers.dev`) with a screenshot in Scout. The card **Pick a water shader** links both. You play each for thirty seconds and pick ch-4.
+3. **Replay the idea that lost.** ch-5 lost, but its second commit had foam along the banks that you liked. In the Logbook you open that commit, choose **Replay from here** with `minimal-diff`, and ch-10 forks ch-5 at that commit while a live agent carries on from there (the same thing as `POST /api/rivers/paperboats/channels/ch-5/replay` with a `sha` and a `strategy`).
+4. **Lines warn; Confluence asks.** *Make steering feel good*: ch-8 needs to change how the current pushes the boat, in `src/world/current.ts`, which ch-2 holds. Lines flag it the moment ch-8 declares. A Line is a claim, not a lock, and ch-8 records its reason in its Logbook and goes ahead. ch-2 lands first, so when ch-8's turn comes Confluence rebases it in a fresh fork (`river-paperboats--cf-make-steering-feel-good-1`, never in place), finds a conflict with no recorded resolution, and asks: **Resolve a merge conflict** (*Keep ch-8 · Keep main · Drop*). You keep ch-8; Confluence re-tests before it lands.
+5. **Bring your own agent.** Gemini CLI joins over MCP (`/connect` has the snippet: `"httpUrl": "https://<your-headwaters>/mcp"` in `~/.gemini/settings.json`). It opens *Add a soundtrack* with `intent_open`, takes it with `channel_start`, declares `src/audio/*` and `assets/audio/*`, writes its Logbook and calls `channel_submit`. Its change adds a dependency and binds an R2 bucket for audio stems in `wrangler.jsonc`, so risk lands above 0.60: **Approve a high-risk change**. Its chip says `gemini-cli` and the model it reported; Headwaters labels work only with the agent that produced it.
+
+**Why it fits:** three takes on a shader cost what one does. Previews and screenshots mean you judge running software: you play, you don't read. Replay keeps losing ideas alive, since any commit of any Channel is a starting point. And Claude Code in Sandboxes, Codex and Gemini CLI over MCP all share one River under the same Lines. Three decisions, each a judgment call; none of them was "please read this diff".
+
+The [Demo River](#demo-river) runs the same machinery end to end with scripted agents: `pnpm seed:demo`, then `pnpm demo`.
+
 ## Architecture
 
 ```

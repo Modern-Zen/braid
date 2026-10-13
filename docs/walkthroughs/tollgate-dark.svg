@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 598" width="1200" height="598" role="img">
+<path d="M0 506 H1200" stroke="#fafaf9" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+<path d="M1110 506 H1200" stroke="#fafaf9" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="210" y="38" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="18" fill="#a8a29e">Meter API calls per customer</text>
+<path d="M60 506 C130 506 140 78 210 78 H890 C960 78 940 506 1010 506" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" fill="none"/>
+<circle cx="339.3" cy="78" r="3" fill="#2dd4bf"/>
+<circle cx="550.0" cy="78" r="3" fill="#2dd4bf"/>
+<circle cx="760.7" cy="78" r="3" fill="#2dd4bf"/>
+<rect x="216" y="55" width="265" height="21" rx="4" fill="#292524" stroke="#44403c"/>
+<text x="224" y="70" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#fafaf9">ch-1 · claude-code · minimal-diff</text>
+<path d="M60 506 C130 506 140 114 210 114 H536" stroke="#78716c" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"/>
+<circle cx="303.5" cy="114" r="3" fill="#78716c"/>
+<circle cx="442.5" cy="114" r="3" fill="#78716c"/>
+<circle cx="536" cy="114" r="4.5" fill="none" stroke="#78716c" stroke-width="1.5"/>
+<text x="218" y="105" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#78716c">ch-2 · claude-code · bold</text>
+<path d="M60 506 C130 506 140 150 210 150 H562" stroke="#78716c" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"/>
+<circle cx="284.7" cy="150" r="3" fill="#78716c"/>
+<circle cx="386.0" cy="150" r="3" fill="#78716c"/>
+<circle cx="487.3" cy="150" r="3" fill="#78716c"/>
+<circle cx="562" cy="150" r="4.5" fill="none" stroke="#78716c" stroke-width="1.5"/>
+<text x="218" y="141" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#78716c">ch-3 · claude-code · conservative</text>
+<text x="274" y="198" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="18" fill="#a8a29e">Prorate plan changes mid-cycle</text>
+<path d="M124 506 C194 506 204 238 274 238 H574" stroke="#78716c" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"/>
+<circle cx="361.0" cy="238" r="3" fill="#78716c"/>
+<circle cx="487.0" cy="238" r="3" fill="#78716c"/>
+<circle cx="574" cy="238" r="4.5" fill="none" stroke="#78716c" stroke-width="1.5"/>
+<text x="282" y="229" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#78716c">ch-4 · claude-code · minimal-diff</text>
+<path d="M124 506 C194 506 204 274 274 274 H930 C1000 274 980 506 1050 506" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" fill="none"/>
+<circle cx="374.0" cy="274" r="3" fill="#2dd4bf"/>
+<circle cx="526.0" cy="274" r="3" fill="#2dd4bf"/>
+<circle cx="678.0" cy="274" r="3" fill="#2dd4bf"/>
+<circle cx="830.0" cy="274" r="3" fill="#2dd4bf"/>
+<rect x="280" y="251" width="258" height="21" rx="4" fill="#292524" stroke="#44403c"/>
+<text x="288" y="266" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#fafaf9">ch-5 · claude-code · tests-first</text>
+<circle cx="900" cy="274" r="10" fill="rgba(217,119,6,0.20)" stroke="#d97706" stroke-width="1.5"/>
+<circle cx="900" cy="274" r="3.5" fill="#d97706"/>
+<text x="884" y="264" text-anchor="end" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#d97706">Approve a high-risk change</text>
+<path d="M124 506 C194 506 204 310 274 310 H626" stroke="#78716c" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"/>
+<circle cx="348.7" cy="310" r="3" fill="#78716c"/>
+<circle cx="450.0" cy="310" r="3" fill="#78716c"/>
+<circle cx="551.3" cy="310" r="3" fill="#78716c"/>
+<circle cx="626" cy="310" r="4.5" fill="none" stroke="#78716c" stroke-width="1.5"/>
+<text x="282" y="301" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#78716c">ch-6 · claude-code · conservative</text>
+<text x="338" y="358" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="18" fill="#a8a29e">Build a printable invoice</text>
+<path d="M188 506 C258 506 268 398 338 398 H638" stroke="#78716c" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"/>
+<circle cx="425.0" cy="398" r="3" fill="#78716c"/>
+<circle cx="551.0" cy="398" r="3" fill="#78716c"/>
+<circle cx="638" cy="398" r="4.5" fill="none" stroke="#78716c" stroke-width="1.5"/>
+<text x="346" y="389" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#78716c">ch-7 · claude-code · minimal-diff</text>
+<path d="M188 506 C258 506 268 434 338 434 H970 C1040 434 1020 506 1090 506" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" fill="none"/>
+<circle cx="435.0" cy="434" r="3" fill="#2dd4bf"/>
+<circle cx="581.0" cy="434" r="3" fill="#2dd4bf"/>
+<circle cx="727.0" cy="434" r="3" fill="#2dd4bf"/>
+<circle cx="873.0" cy="434" r="3" fill="#2dd4bf"/>
+<rect x="344" y="411" width="273" height="21" rx="4" fill="#292524" stroke="#44403c"/>
+<text x="352" y="426" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" fill="#fafaf9">ch-8 · codex via MCP · tests-first</text>
+<circle cx="940" cy="434" r="10" fill="rgba(217,119,6,0.20)" stroke="#d97706" stroke-width="1.5"/>
+<circle cx="940" cy="434" r="3.5" fill="#d97706"/>
+<text x="924" y="424" text-anchor="end" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#d97706">Pick a printable invoice</text>
+<path d="M668 274 V434" stroke="#e11d48" stroke-width="1" stroke-dasharray="3 4" opacity="0.7"/>
+<ellipse cx="668" cy="274" rx="15" ry="6" fill="rgba(225,29,72,0.18)" stroke="#e11d48"/>
+<ellipse cx="668" cy="434" rx="15" ry="6" fill="rgba(225,29,72,0.18)" stroke="#e11d48"/>
+<text x="684" y="351" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#d6d3d1">ch-5 ↔ ch-8 both declared</text>
+<text x="684" y="369" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#e11d48">src/billing/money.ts</text>
+<text x="16" y="536" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13.5" fill="#d6d3d1">main @ 7c41e02</text>
+<text x="1184" y="536" text-anchor="end" font-family="Georgia, 'Times New Roman', serif" font-size="21" fill="#fafaf9">8 agents · 23 commits · 2 decisions asked of you</text>
+<g transform="translate(0 580)"><path d="M0 0 H22" stroke="#2dd4bf" stroke-width="2"/><text x="36" y="5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#a8a29e">a Channel (one agent, its own fork)</text></g>
+<g transform="translate(331 580)"><path d="M0 0 H22" stroke="#78716c" stroke-width="1.5"/><circle cx="26" cy="0" r="3.5" fill="none" stroke="#78716c" stroke-width="1.5"/><text x="36" y="5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#a8a29e">not picked</text></g>
+<g transform="translate(477 580)"><path d="M0 0 H22" stroke="#e11d48" stroke-dasharray="3 4"/><text x="36" y="5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#a8a29e">Lines overlapped</text></g>
+<g transform="translate(667.4 580)"><circle cx="10" cy="0" r="7" fill="rgba(217,119,6,0.20)" stroke="#d97706" stroke-width="1.5"/><text x="36" y="5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#a8a29e">a decision for you</text></g>
+</svg>
