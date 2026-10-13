@@ -1,0 +1,42 @@
+# Headwaters' source lives in Cloudflare Artifacts (River `braid`, repo `river-braid`).
+# This GitHub repo is a read-only mirror: every 15 minutes (or on demand) it pulls main from
+# Headwaters' public, read-only Git endpoint and makes GitHub match it exactly.
+# Don't push to GitHub directly; push to Artifacts (see README, "Contributing").
+name: Mirror from Artifacts
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mirror
+  cancel-in-progress: false
+
+env:
+  HEADWATERS_GIT: https://braid.modern-zen.workers.dev/git/river-braid.git
+
+jobs:
+  mirror:
+    # Copies of this repo (e.g. from the Deploy to Cloudflare button) don't mirror anything.
+    if: github.repository == 'Modern-Zen/braid'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch main from Artifacts
+        run: |
+          git init -q mirror
+          cd mirror
+          git fetch -q "$HEADWATERS_GIT" main
+          echo "SHA=$(git rev-parse FETCH_HEAD)" >> "$GITHUB_ENV"
+      - name: Update GitHub main
+        working-directory: mirror
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          current=$(git ls-remote "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | cut -f1)
+          if [ "$current" = "$SHA" ]; then echo "Up to date at $SHA"; exit 0; fi
+          git push --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "FETCH_HEAD:refs/heads/main"
+          echo "Mirrored $SHA"

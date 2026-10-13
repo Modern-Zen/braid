@@ -12,6 +12,7 @@ import { handleArtifactsQueue } from "./events.ts";
 import { prepareSmoke, runSmoke, verifySmoke } from "./smoke.ts";
 import { adminRivers, httpErrorStatus, rivers } from "./routes/rivers.ts";
 import { handleMcp } from "./mcp.ts";
+import { handleGit } from "./git-proxy.ts";
 
 export { RiverAgent } from "./agents/river.ts";
 export { ChannelAgent } from "./agents/channel.ts";
@@ -87,6 +88,9 @@ app.get("/ws/river/:id", requireHuman, async (c) => {
   const river = await getAgentByName(c.env.RiverAgent, c.req.param("id"));
   return river.fetch(c.req.raw);
 });
+
+// ── Public, read-only Git for allowlisted repos (Headwaters hosts its own source) ─
+app.on(["GET", "POST"], "/git/*", (c) => handleGit(c.req.raw, c.env));
 
 // ── MCP: external agents join a River with a per-River bearer token ──────────
 app.all("/mcp", (c) => handleMcp(c.req.raw, c.env, c.executionCtx as ExecutionContext));

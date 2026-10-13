@@ -12,7 +12,7 @@
   "assets": {
     "directory": "../ui/dist",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/mcp", "/mcp/*", "/ws/*", "/health", "/app", "/app/*"]
+    "run_worker_first": ["/api/*", "/mcp", "/mcp/*", "/ws/*", "/git/*", "/health", "/app", "/app/*"]
   },
 
   "vars": {
@@ -22,7 +22,9 @@
     "LIVE_MODEL": "claude-sonnet-5-5",
     "BRAID_SCRIPTED_SPEED": "1",
     // Local dev only: start ReviewWorkflow for pushes (Artifacts events fire only when deployed).
-    "BRAID_SIMULATE_EVENTS": "0"
+    "BRAID_SIMULATE_EVENTS": "0",
+    // Repos anyone can clone read-only at /git/<repo>.git (Headwaters' own source, the demo).
+    "PUBLIC_REPOS": "river-braid,river-riverlevels"
   },
   "secrets": { "required": ["ADMIN_TOKEN"] },
 
