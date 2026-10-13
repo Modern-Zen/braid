@@ -31,8 +31,17 @@ export function parseTestOutput(log: string, exitCode: number): TestResult {
   if (line) {
     const passed = Number(/(\d+) passed/.exec(line)?.[1] ?? 0);
     const failed = Number(/(\d+) failed/.exec(line)?.[1] ?? 0);
-    const total = Number(/\((\d+)\)/.exec(line)?.[1] ?? /(\d+) total/.exec(line)?.[1] ?? passed + failed);
+    let total = Number(/\((\d+)\)/.exec(line)?.[1] ?? /(\d+) total/.exec(line)?.[1] ?? passed + failed);
     const failures = [...clean.matchAll(/^\s*(?:×|✗|FAIL)\s+(.+)$/gm)].map((m) => m[1]!.trim()).slice(0, 10);
+    // A test file that fails to load (e.g. it imports code that doesn't exist yet) is not counted
+    // in "Tests", only in "Test Files … failed" and the exit code. Count each as a failing test.
+    const failedFiles = Number(/^\s*Test (?:Files|Suites):?\s+(\d+) failed/m.exec(clean)?.[1] ?? 0);
+    const unexplained = exitCode !== 0 && passed === total ? Math.max(1, failedFiles) : 0;
+    const extra = Math.max(unexplained, failed === 0 ? failedFiles : 0);
+    if (extra > 0) {
+      total += extra;
+      failures.push(`${extra} test file${extra === 1 ? "" : "s"} failed to run`);
+    }
     return { passed, total, failures };
   }
   return exitCode === 0 ? { passed: 1, total: 1 } : { passed: 0, total: 1, failures: ["test command failed"] };

@@ -15,6 +15,22 @@ describe("parseTestOutput", () => {
     expect(r.failures).toEqual(["gauge > keeps contrast 3ms", "gauge > dark labels 2ms"]);
   });
 
+  it("counts a test file that failed to load", () => {
+    const log = ` FAIL  test/dark-mode.test.tsx [ test/dark-mode.test.tsx ]
+Error: Failed to resolve import "../src/theme/dark"
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  14 passed (14)
+`;
+    const r = parseTestOutput(log, 1);
+    expect(r).toMatchObject({ passed: 14, total: 15 });
+    expect(r.failures).toContain("1 test file failed to run");
+  });
+
+  it("never reports green on a non-zero exit", () => {
+    expect(parseTestOutput("      Tests  14 passed (14)\n", 1)).toMatchObject({ passed: 14, total: 15 });
+  });
+
   it("reads jest and strips colors", () => {
     expect(parseTestOutput("\u001b[1mTests:\u001b[22m       1 failed, 9 passed, 10 total", 1)).toMatchObject({ passed: 9, total: 10 });
   });
