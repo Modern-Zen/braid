@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  HEADWATERS_GIT: https://braid.modern-zen.workers.dev/git/river-braid.git
+  HEADWATERS_GIT: https://braid.drp.icu/git/river-braid.git
 
 jobs:
   mirror:

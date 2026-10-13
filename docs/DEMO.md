@@ -5,7 +5,7 @@ The 8-minute video from [`PLAN.md` §10](PLAN.md#10-video-outline-8-minutes), sc
 ## Before recording
 
 ```powershell
-$env:BRAID_URL = "https://braid.<subdomain>.workers.dev"   # or https://braid.drp.icu
+$env:BRAID_URL = "https://braid.drp.icu"
 $env:BRAID_ADMIN_TOKEN = "<ADMIN_TOKEN>"
 pnpm reset:demo     # deletes demo forks, clears Intents, force-pushes the seed commit to main
 pnpm seed:demo      # idempotent; deploys the preview base Worker if previews are configured

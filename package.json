@@ -24,7 +24,8 @@
     "db:migrate": "wrangler d1 migrations apply DB --remote",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "types": "wrangler types apps/worker/worker-configuration.d.ts",
-    "check:mcp": "tsx scripts/check-mcp-oauth.ts"
+    "check:mcp": "tsx scripts/check-mcp-oauth.ts",
+    "deploy:prod": "wrangler deploy --domain braid.drp.icu && wrangler d1 migrations apply DB --remote"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

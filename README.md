@@ -6,14 +6,14 @@ Headwaters is a Git platform for the agentic era, built on Cloudflare Workers an
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Modern-Zen/braid)
 
-> **Live:** https://braid.modern-zen.workers.dev · **Connect an agent:** [`/connect`](https://braid.modern-zen.workers.dev/connect) · Codename `braid` · Built by Modern Zen Strategies for Cloudflare's "build the next Git platform" competition. See [`docs/PLAN.md`](docs/PLAN.md) and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+> **Live:** https://braid.drp.icu · **Connect an agent:** [`/connect`](https://braid.drp.icu/connect) · Codename `braid` · Built by Modern Zen Strategies for Cloudflare's "build the next Git platform" competition. See [`docs/PLAN.md`](docs/PLAN.md) and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Where the source lives
 
 **Headwaters hosts itself.** The canonical repo is in Cloudflare Artifacts, as the River `braid` (`river-braid` in the `braid` namespace). Anyone can clone it, read-only, with no token:
 
 ```powershell
-git clone https://braid.modern-zen.workers.dev/git/river-braid.git braid
+git clone https://braid.drp.icu/git/river-braid.git braid
 ```
 
 [`github.com/Modern-Zen/braid`](https://github.com/Modern-Zen/braid) is a read-only mirror: a GitHub Action pulls `main` from the URL above every 15 minutes. Don't push to GitHub; see [Contributing](#contributing).
@@ -174,7 +174,7 @@ Headwaters speaks MCP over Streamable HTTP at `https://<your-headwaters>/mcp`. E
 The source of truth is `river-braid` in Artifacts. With an operator token for the deployment:
 
 ```powershell
-$env:BRAID_URL = "https://braid.modern-zen.workers.dev"
+$env:BRAID_URL = "https://braid.drp.icu"
 $env:BRAID_ADMIN_TOKEN = "<ADMIN_TOKEN>"
 pnpm git:setup              # adds the `headwaters` remote and a credential helper (10-minute tokens, nothing stored)
 git push headwaters main
