@@ -9,7 +9,9 @@ import { MoonIcon, SunIcon } from "../components/icons.tsx";
 import { StatCounter } from "../components/StatCounter.tsx";
 import { useTheme } from "../theme.ts";
 
+// The source lives on Headwaters itself (Artifacts, River `braid`); GitHub is a read-only mirror.
 const SOURCE = "https://github.com/Modern-Zen/braid";
+const HOME_GIT = () => `${typeof location === "undefined" ? "https://braid.drp.icu" : location.origin}/git/river-braid.git`;
 // Illustrative labels from the design. The app itself only ever shows real agents.
 const HERO_LABELS = ["claude-code", "codex", "gemini", "claude-code", "devin", "aider", "claude-code", "codex", "gemini"].map(
   (a, i) => `ch-${i + 1} · ${a}`,
@@ -487,11 +489,11 @@ function OpenSource(): ReactElement {
           <div style={label}>06 / Open source</div>
           <h2 style={h2}>MIT. Run it on your own account.</h2>
           <p style={{ margin: "16px 0 0", color: "var(--hw-color-ink-2)", maxWidth: 480, textWrap: "pretty" }}>
-            The source lives at{" "}
+            The source lives on Headwaters itself, in Artifacts, and is mirrored to{" "}
             <a href={SOURCE} style={{ fontFamily: "var(--hw-font-mono)", fontSize: 15 }}>
               Modern-Zen/braid
             </a>
-            . One Worker, one Artifacts bucket, your own agents.
+            . One Worker, one Artifacts namespace, your own agents.
           </p>
           <a href={`${SOURCE}#run-it-yourself`} className="hw-btn-outline" style={{ ...secondary, marginTop: 28 }}>
             Run it yourself
@@ -499,7 +501,8 @@ function OpenSource(): ReactElement {
         </div>
         <CodePanel lineHeight={1.8} breakAll>
           <div>
-            <Prompt /> git clone https://github.com/Modern-Zen/braid
+            <Prompt /> git clone {HOME_GIT().replace(/river-braid\.git$/, "")}
+            <Accent>river-braid</Accent>.git braid
           </div>
           <div>
             <Prompt /> cd braid; pnpm install
