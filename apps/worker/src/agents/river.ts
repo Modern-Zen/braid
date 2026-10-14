@@ -290,10 +290,11 @@ export class RiverAgent extends Agent<Env, RiverState> {
   private async pumpMerges(): Promise<void> {
     const running = this.sql<{ n: number }>`SELECT COUNT(*) AS n FROM merges WHERE state = 'running'`[0]?.n ?? 0;
     if (running > 0) return;
-    const next = this.sql<{ intent_id: string; channel_id: string; by: string; attempt: number }>`
-      SELECT intent_id, channel_id, by, attempt FROM merges WHERE state = 'queued' ORDER BY enqueued_at LIMIT 1`[0];
+    const next = this.sql<{ intent_id: string; channel_id: string; by: string; attempt: number; enqueued_at: number }>`
+      SELECT intent_id, channel_id, by, attempt, enqueued_at FROM merges WHERE state = 'queued' ORDER BY enqueued_at LIMIT 1`[0];
     if (!next) return;
-    const id = `cf-${this.name}-${next.intent_id}-${next.attempt}`;
+    // Unique per queued row: a demo reset restarts attempts at 1, and Workflow instance ids outlive it.
+    const id = `cf-${this.name}-${next.intent_id}-${next.attempt}-${next.enqueued_at.toString(36)}`;
     this.sql`UPDATE merges SET state = 'running', workflow_id = ${id} WHERE intent_id = ${next.intent_id}`;
     try {
       await this.env.CONFLUENCE_WF.create({
