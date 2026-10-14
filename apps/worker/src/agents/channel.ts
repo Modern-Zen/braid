@@ -67,9 +67,13 @@ export class ChannelAgent extends Agent<Env, ChannelState> {
     return this.state;
   }
 
-  /** Start the run. Idempotent: a Channel that already started is left alone. */
+  /**
+   * Start the run. Idempotent while a run is live; a stopped run (demo reset, Eddy drop) can
+   * start again, because after a reset Channel numbers restart and reuse this Durable Object.
+   */
   async start(config: ChannelConfig): Promise<{ started: boolean }> {
-    if (this.state.config) return { started: false };
+    if (this.state.config && this.state.status !== "dropped") return { started: false };
+    for (const s of this.getSchedules()) await this.cancelSchedule(s.id);
     this.setState({
       ...this.initialState,
       config,
